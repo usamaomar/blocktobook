@@ -1,0 +1,1 @@
+web: build/install/com.usama.blocktobock/bin/com.usama.blocktobock
