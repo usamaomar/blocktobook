@@ -33,8 +33,8 @@ import org.litote.kmongo.util.idValue
 
 private const val errorCode: Int = 8
 
-fun Route.authRout(authDataSource: AuthDataSource) {
-//    val authDataSource: AuthDataSource by KoinJavaComponent.inject(AuthDataSource::class.java)
+fun Route.authRout() {
+    val authDataSource: AuthDataSource by KoinJavaComponent.inject(AuthDataSource::class.java)
 
 
     post(Api.Auth.GoogleLoginMerchant.path) {

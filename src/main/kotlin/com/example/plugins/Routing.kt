@@ -24,8 +24,8 @@ import org.koin.java.KoinJavaComponent.inject
 
 fun Application.configureRouting() {
     routing {
-        val authDataSource: AuthDataSource by  inject(AuthDataSource::class.java)
-        authRout(authDataSource)
+//        val authDataSource: AuthDataSource by  inject(AuthDataSource::class.java)
+        authRout()
         cartRout()
         profileRout()
         userRoute()
