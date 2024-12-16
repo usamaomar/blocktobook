@@ -33,9 +33,9 @@ import org.litote.kmongo.util.idValue
 
 private const val errorCode: Int = 8
 
-fun Route.authRout() {
+fun Route.authRout(authDataSource: AuthDataSource) {
 //    val authDataSource: AuthDataSource by KoinJavaComponent.inject(AuthDataSource::class.java)
-    val authDataSource: AuthDataSource by inject(AuthDataSource::class.java)
+
 
     post(Api.Auth.GoogleLoginMerchant.path) {
         try {
@@ -101,6 +101,9 @@ fun Route.authRout() {
     post(Api.Auth.CreateEmailMerchant.path) {
         try {
             val request = call.receiveModel<CreateTokenModel>()
+            call.respond(
+                message = "authDataSource00-0-0 = ${authDataSource.idValue}"
+            )
             FirebaseAuth.getInstance().verifyIdToken(request.tokenId).run {
                 if(this!=null){
                     val mapModel = authDataSource.loginByToken(CreateEmailModel(this.email, this.name, this.uid))

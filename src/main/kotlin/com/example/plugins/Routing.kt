@@ -1,5 +1,6 @@
 package com.example.plugins
 
+import com.example.data.repository.authDataSource.AuthDataSource
 import com.example.routes.airLineRout
 import com.example.routes.airLineTicketRout
 import com.example.routes.airPortRout
@@ -18,10 +19,13 @@ import com.example.routes.userRoute
 import com.example.routes.walletRoute
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
+import org.koin.java.KoinJavaComponent
+import org.koin.java.KoinJavaComponent.inject
 
 fun Application.configureRouting() {
     routing {
-        authRout()
+        val authDataSource: AuthDataSource by  inject(AuthDataSource::class.java)
+        authRout(authDataSource)
         cartRout()
         profileRout()
         userRoute()

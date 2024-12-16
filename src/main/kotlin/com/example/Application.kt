@@ -8,10 +8,10 @@ fun main(args: Array<String>) {
 }
 
 fun Application.module() {
+    configureKoin()
     firebaseInit()
     configureCORS()
     intercept()
-    configureKoin()
     configureSerialization()
     configureRouting()
     configureMonitoring()
