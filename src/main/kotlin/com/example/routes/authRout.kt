@@ -28,12 +28,15 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import kotlinx.serialization.json.Json
 import org.koin.java.KoinJavaComponent
+import org.koin.java.KoinJavaComponent.inject
 import org.litote.kmongo.util.idValue
 
 private const val errorCode: Int = 8
 
 fun Route.authRout() {
-    val authDataSource: AuthDataSource by KoinJavaComponent.inject(AuthDataSource::class.java)
+//    val authDataSource: AuthDataSource by KoinJavaComponent.inject(AuthDataSource::class.java)
+    val authDataSource: AuthDataSource by inject(AuthDataSource::class.java)
+
     post(Api.Auth.GoogleLoginMerchant.path) {
         try {
             val request = call.receive<CreateTokenModel>()
