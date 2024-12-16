@@ -10,6 +10,7 @@ import com.example.domain.model.authModel.CreateRefreshTokenModel
 import com.example.domain.model.userModel.User
 import com.example.domain.model.authModel.ResponseTokenModel
 import com.example.domain.model.authModel.UpdateTokenModel
+import com.example.domain.model.profileModel.CompanyInfoModel
 import com.example.plugins.decodeJwtPayload
 import com.example.util.AccessRole
 import com.example.util.Constants
@@ -241,60 +242,45 @@ class AuthDataSourceImpl(database: CoroutineDatabase) : AuthDataSource {
             )
         }
     }
-    override suspend fun createEmailAdmin(createEmailModel: CreateEmailAdminModel): Map<String, Any>  {
-        val existingUser = users.findOne(filter = User::emailAddress eq createEmailModel.email)
+    override suspend fun createEmailAdmin(createEmailModel: CreateEmailModel): Map<String, Any>  {
+        var existingUser = users.findOne(filter = User::emailAddress eq createEmailModel.email)
         if (existingUser == null) {
-            val userRecord = FirebaseAuth.getInstance().createUser(
-                com.google.firebase.auth.UserRecord.CreateRequest()
-                    .setEmail(createEmailModel.email)
-//                    .setPassword(createEmailModel.password)
-                    .setDisplayName(createEmailModel.userName)
-            )
             val user = User(
-                id = userRecord.uid,
-                name = createEmailModel.userName,
+                id = createEmailModel.uid,
+                name = createEmailModel.name,
                 emailAddress = createEmailModel.email,
-                accessRole = AccessRole.Admin,
-                profilePhoto = ""
+                accessRole = AccessRole.Merchant, profilePhoto = "",
+                companyInfo = CompanyInfoModel(name = "admin", phoneNumber = "0779350932", facilityNumber = "admin", tourismLicense = "admin", commercialRegister = "admin", isCompanyInfoVerified = true, blockToBookFees = 0.0)
             )
-            val accessToken = generateAccessToken(
-                userId = userRecord.uid,
-                secret = hex("00112233445566778899aabbccddeeff").toString(),
-                issuer = ISSUER,
-                audience = AUDIENCE
-            )
-            val refreshToken = generateRefreshToken(
-                userId = userRecord.uid,
-                secret = hex("00112233bbccddeeff").toString(),
-                issuer = ISSUER,
-            )
-            users.insertOne(document = user).wasAcknowledged()
-            refreshTokenDataBase.insertOne(
-                document = UpdateTokenModel(
-                    refreshToken = refreshToken,
-                    token = accessToken,
-                    userId = userRecord.uid
-                )
-            ).wasAcknowledged()
-            return mapOf(
-                "ApiResponse" to ApiResponse(
-                    succeeded = true,
-                    data = ResponseTokenModel(token = accessToken, refreshToken = refreshToken),
-                    errorCode = errorCode
-                ),
-                "UserSession" to UserSession(id = userRecord.uid, name = userRecord.displayName)
-            )
-        } else {
-            return mapOf(
-                "ApiResponse" to ApiResponse(
-                    succeeded = false,
-                    message = arrayListOf("User already exists"),
-                    data = null,
-                    code = Constants.USER_HAS_ACCOUNT,
-                    errorCode = errorCode
-                )
-            )
+            users.insertOne(document = user)
+            existingUser = users.findOne(filter = User::emailAddress eq createEmailModel.email)
         }
+        val accessToken = generateAccessToken(
+            userId = existingUser?.id ?: "",
+            secret = hex("00112233445566778899aabbccddeeff").toString(),
+            issuer = ISSUER,
+            audience = AUDIENCE
+        )
+        val refreshToken = generateRefreshToken(
+            userId = existingUser?.id ?: "",
+            secret = hex("00112233bbccddeeff").toString(),
+            issuer = ISSUER,
+        )
+        refreshTokenDataBase.insertOne(
+            document = UpdateTokenModel(
+                refreshToken = refreshToken,
+                token = accessToken,
+                userId = existingUser?.id ?: "",
+            )
+        ).wasAcknowledged()
+        return mapOf(
+            "ApiResponse" to ApiResponse(
+                succeeded = true,
+                data = ResponseTokenModel(token = accessToken, refreshToken = refreshToken),
+                errorCode = errorCode
+            ),
+            "UserSession" to UserSession(id = existingUser?.id ?: "", name = existingUser?.name ?: "")
+        )
     }
 
     override suspend fun refresh(tokenModel: CreateRefreshTokenModel?): Map<String, Any> {

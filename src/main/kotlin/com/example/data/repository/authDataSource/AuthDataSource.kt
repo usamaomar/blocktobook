@@ -9,7 +9,7 @@ interface AuthDataSource {
     suspend fun loginByEmailMerchant(createEmailModel: CreateEmailModel): Map<String, Any>?
     suspend fun loginByToken(createEmailModel: CreateEmailModel): Map<String, Any>?
     suspend fun createEmailMerchant(createEmailModel: CreateEmailModel): Map<String, Any>?
-    suspend fun createEmailAdmin(createEmailModel: CreateEmailAdminModel): Map<String, Any>?
+    suspend fun createEmailAdmin(createEmailModel: CreateEmailModel): Map<String, Any>?
     suspend fun refresh(tokenModel: CreateRefreshTokenModel?): Map<String, Any>?
 
     suspend fun getTest(): String?

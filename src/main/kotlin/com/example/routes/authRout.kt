@@ -72,17 +72,10 @@ fun Route.authRout() {
             val request = call.receiveModel<CreateTokenModel>()
             FirebaseAuth.getInstance().verifyIdToken(request.tokenId).run {
                 if(this!=null){
-//                    call.respond(
-//                        message = "authDataSource00-0-0 = ${authDataSource.idValue}"
-//                    )
                     val mapModel = authDataSource.loginByToken(CreateEmailModel(this.email, this.name ?: "user", this.uid))
                     call.respond(
                         message = mapModel?.get("ApiResponse") as ApiResponse<ResponseTokenModel>
                     )
-//                    val mapModel = authDataSource.getTest()
-//                    call.respond(
-//                        message = mapModel as String
-//                    )
                 }else{
                     call.respond(
                         message = ApiResponse(
@@ -106,9 +99,6 @@ fun Route.authRout() {
     post(Api.Auth.CreateEmailMerchant.path) {
         try {
             val request = call.receiveModel<CreateTokenModel>()
-//            call.respond(
-//                message = "authDataSource00-0-0 = ${authDataSource.idValue}"
-//            )  mimii
             FirebaseAuth.getInstance().verifyIdToken(request.tokenId).run {
                 if(this!=null){
                     val mapModel = authDataSource.loginByToken(CreateEmailModel(this.email, this.name, this.uid))
@@ -134,49 +124,26 @@ fun Route.authRout() {
                 ), status = HttpStatusCode.ExpectationFailed
             )
         }
-
-//
-//            val mapModel = authDataSource.createEmailMerchant(request)
-//            if (mapModel?.get("UserSession") == null) {
-//                call.respond(
-//                    message = ApiResponse(
-//                        succeeded = false,
-//                        message = arrayListOf("Account already exists"),
-//                        data = null, errorCode = errorCode
-//                    )
-//                )
-//            } else {
-////                call.sessions.set(mapModel.get("UserSession") as UserSession)
-//                call.respond(
-//                    message = mapModel["ApiResponse"] as ApiResponse<ResponseTokenModel>
-//                )
-//            }
-//        } catch (e: Exception) {
-//            call.respond(
-//                message = ApiResponse(
-//                    succeeded = false,
-//                    message = arrayListOf(e.message.toString(), e.cause?.message.toString()),
-//                    data = null, errorCode = errorCode
-//                ), status = HttpStatusCode.ExpectationFailed
-//            )
-//        }
     }
+
     post(Api.Auth.CreateEmailAdmin.path) {
         try {
-            val request = call.receive<CreateEmailAdminModel>()
-            val mapModel = authDataSource.createEmailAdmin(request)
-            if (mapModel?.get("UserSession") == null) {
-                call.respond(
-                    message = ApiResponse(
-                        succeeded = false,
-                        message = arrayListOf("Account already exists"),
-                        data = null, errorCode = errorCode
+            val request = call.receiveModel<CreateTokenModel>()
+            FirebaseAuth.getInstance().verifyIdToken(request.tokenId).run {
+                if(this!=null){
+                    val mapModel = authDataSource.createEmailAdmin(CreateEmailModel(this.email, this.name ?: "Admin", this.uid))
+                    call.respond(
+                        message = mapModel?.get("ApiResponse") as ApiResponse<ResponseTokenModel>
                     )
-                )
-            } else {
-                call.respond(
-                    message = mapModel["ApiResponse"] as ApiResponse<ResponseTokenModel>
-                )
+                }else{
+                    call.respond(
+                        message = ApiResponse(
+                            succeeded = false,
+                            message = arrayListOf("Not authorized"),
+                            data = null, errorCode = errorCode
+                        ), status = HttpStatusCode.ExpectationFailed
+                    )
+                }
             }
         } catch (e: Exception) {
             call.respond(
@@ -188,6 +155,7 @@ fun Route.authRout() {
             )
         }
     }
+
     post(Api.Auth.ForgotPassword.path) {
         try {
             val request = call.receive<ForgetPasswordEmailModel>()
