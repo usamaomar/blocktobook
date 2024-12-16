@@ -80,7 +80,7 @@ fun Route.authRout(authDataSource: AuthDataSource) {
 //                    )
                     val mapModel = authDataSource.getTest()
                     call.respond(
-                        message = mapModel as ApiResponse<String>
+                        message = mapModel as String
                     )
                 }else{
                     call.respond(
