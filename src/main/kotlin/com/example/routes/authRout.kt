@@ -8,11 +8,9 @@ import com.example.domain.model.authModel.CreateRefreshTokenModel
 import com.example.domain.model.authModel.CreateTokenModel
 import com.example.domain.model.authModel.FirebaseForgetPasswordRequest
 import com.example.domain.model.authModel.ForgetPasswordEmailModel
-import com.example.domain.model.authModel.ResponseTokenModel
 import com.example.endPoints.Api
 import com.example.util.receiveModel
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.UserRecord
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -68,7 +66,7 @@ fun Route.authRout() {
         try {
             val request = call.receiveModel<CreateTokenModel>()
             call.respond(
-                message = "${request}"
+                message = "tokenId = ${request.tokenId}"
             )
             FirebaseAuth.getInstance().verifyIdToken(request.tokenId).run {
                 if(this!=null){
