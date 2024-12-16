@@ -8,6 +8,7 @@ import com.example.domain.model.authModel.CreateRefreshTokenModel
 import com.example.domain.model.authModel.CreateTokenModel
 import com.example.domain.model.authModel.FirebaseForgetPasswordRequest
 import com.example.domain.model.authModel.ForgetPasswordEmailModel
+import com.example.domain.model.authModel.ResponseTokenModel
 import com.example.endPoints.Api
 import com.example.util.receiveModel
 import com.google.firebase.auth.FirebaseAuth
@@ -74,14 +75,14 @@ fun Route.authRout() {
 //                    call.respond(
 //                        message = "authDataSource00-0-0 = ${authDataSource.idValue}"
 //                    )
-//                    val mapModel = authDataSource.loginByToken(CreateEmailModel(this.email, this.name ?: "user", this.uid))
-//                    call.respond(
-//                        message = mapModel?.get("ApiResponse") as ApiResponse<*>
-//                    )
-                    val mapModel = authDataSource.getTest()
+                    val mapModel = authDataSource.loginByToken(CreateEmailModel(this.email, this.name ?: "user", this.uid))
                     call.respond(
-                        message = mapModel as String
+                        message = mapModel?.get("ApiResponse") as ApiResponse<ResponseTokenModel>
                     )
+//                    val mapModel = authDataSource.getTest()
+//                    call.respond(
+//                        message = mapModel as String
+//                    )
                 }else{
                     call.respond(
                         message = ApiResponse(
@@ -112,7 +113,7 @@ fun Route.authRout() {
                 if(this!=null){
                     val mapModel = authDataSource.loginByToken(CreateEmailModel(this.email, this.name, this.uid))
                     call.respond(
-                        message = mapModel?.get("ApiResponse") as ApiResponse<*>
+                        message = mapModel?.get("ApiResponse") as ApiResponse<ResponseTokenModel>
                     )
                 }else{
                     call.respond(
@@ -174,7 +175,7 @@ fun Route.authRout() {
                 )
             } else {
                 call.respond(
-                    message = mapModel["ApiResponse"] as ApiResponse<*>
+                    message = mapModel["ApiResponse"] as ApiResponse<ResponseTokenModel>
                 )
             }
         } catch (e: Exception) {
@@ -249,7 +250,7 @@ fun Route.authRout() {
                 }
 //                call.sessions.set(mapModel?.get("UserSession") as UserSession)
                 call.respond(
-                    message = mapModel?.get("ApiResponse") as ApiResponse<*>
+                    message = mapModel?.get("ApiResponse") as ApiResponse<ResponseTokenModel>
                 )
             } else {
                 call.respond(
