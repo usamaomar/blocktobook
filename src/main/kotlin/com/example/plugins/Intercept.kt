@@ -70,7 +70,7 @@ fun Application.intercept() {
 
     intercept(ApplicationCallPipeline.Plugins) {
         if (!excludedPaths.contains(call.request.path().removeQueryParams())) {
-            if(containsUploadsPath("http://localhost:8080/app/uploads/1727803989932093.png")){
+            if(containsUploadsPath(call.request.path().removeQueryParams())){
                 return@intercept
             }
             val authorization = call.request.headers["Authorization"]
