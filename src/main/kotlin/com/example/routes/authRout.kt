@@ -28,6 +28,7 @@ import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
 import kotlinx.serialization.json.Json
 import org.koin.java.KoinJavaComponent
+import org.litote.kmongo.util.idValue
 
 private const val errorCode: Int = 8
 
@@ -65,11 +66,11 @@ fun Route.authRout() {
     post(Api.Auth.LoginByEmailMerchant.path) {
         try {
             val request = call.receiveModel<CreateTokenModel>()
-            call.respond(
-                message = "tokenId = ${request.tokenId}"
-            )
             FirebaseAuth.getInstance().verifyIdToken(request.tokenId).run {
                 if(this!=null){
+                    call.respond(
+                        message = "authDataSource00-0-0 = ${authDataSource.idValue}"
+                    )
                     val mapModel = authDataSource.loginByToken(CreateEmailModel(this.email, this.name ?: "user", this.uid))
                     call.respond(
                         message = mapModel?.get("ApiResponse") as ApiResponse<*>
