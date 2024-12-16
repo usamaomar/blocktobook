@@ -71,7 +71,7 @@ fun Route.authRout() {
                 if(this!=null){
                     val mapModel = authDataSource.loginByToken(CreateEmailModel(this.email, this.name ?: "user", this.uid))
                     call.respond(
-                        message = mapModel?.get("ApiResponse") as ApiResponse<ResponseTokenModel>
+                        message = mapModel?.get("ApiResponse") as ApiResponse<*>
                     )
                 }else{
                     call.respond(
@@ -100,7 +100,7 @@ fun Route.authRout() {
                 if(this!=null){
                     val mapModel = authDataSource.loginByToken(CreateEmailModel(this.email, this.name, this.uid))
                     call.respond(
-                        message = mapModel?.get("ApiResponse") as ApiResponse<ResponseTokenModel>
+                        message = mapModel?.get("ApiResponse") as ApiResponse<*>
                     )
                 }else{
                     call.respond(
@@ -162,7 +162,7 @@ fun Route.authRout() {
                 )
             } else {
                 call.respond(
-                    message = mapModel["ApiResponse"] as ApiResponse<ResponseTokenModel>
+                    message = mapModel["ApiResponse"] as ApiResponse<*>
                 )
             }
         } catch (e: Exception) {
@@ -237,7 +237,7 @@ fun Route.authRout() {
                 }
 //                call.sessions.set(mapModel?.get("UserSession") as UserSession)
                 call.respond(
-                    message = mapModel?.get("ApiResponse") as ApiResponse<ResponseTokenModel>
+                    message = mapModel?.get("ApiResponse") as ApiResponse<*>
                 )
             } else {
                 call.respond(
