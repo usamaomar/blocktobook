@@ -64,9 +64,6 @@ fun Route.authRout() {
     }
     post(Api.Auth.LoginByEmailMerchant.path) {
         try {
-            call.respond(
-                message = "tokenId = usama"
-            )
             val request = call.receiveModel<CreateTokenModel>()
             call.respond(
                 message = "tokenId = ${request.tokenId}"
