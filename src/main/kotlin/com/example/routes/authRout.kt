@@ -74,9 +74,13 @@ fun Route.authRout(authDataSource: AuthDataSource) {
 //                    call.respond(
 //                        message = "authDataSource00-0-0 = ${authDataSource.idValue}"
 //                    )
-                    val mapModel = authDataSource.loginByToken(CreateEmailModel(this.email, this.name ?: "user", this.uid))
+//                    val mapModel = authDataSource.loginByToken(CreateEmailModel(this.email, this.name ?: "user", this.uid))
+//                    call.respond(
+//                        message = mapModel?.get("ApiResponse") as ApiResponse<*>
+//                    )
+                    val mapModel = authDataSource.getTest()
                     call.respond(
-                        message = mapModel?.get("ApiResponse") as ApiResponse<*>
+                        message = mapModel as ApiResponse<String>
                     )
                 }else{
                     call.respond(

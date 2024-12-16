@@ -12,4 +12,7 @@ interface AuthDataSource {
     suspend fun createEmailAdmin(createEmailModel: CreateEmailAdminModel): Map<String, Any>?
     suspend fun refresh(tokenModel: CreateRefreshTokenModel?): Map<String, Any>?
 
+    suspend fun getTest(): String?
+
+
 }
