@@ -67,6 +67,9 @@ fun Route.authRout() {
     post(Api.Auth.LoginByEmailMerchant.path) {
         try {
             val request = call.receiveModel<CreateTokenModel>()
+            call.respond(
+                message = "${request}"
+            )
             FirebaseAuth.getInstance().verifyIdToken(request.tokenId).run {
                 if(this!=null){
                     val mapModel = authDataSource.loginByToken(CreateEmailModel(this.email, this.name ?: "user", this.uid))
