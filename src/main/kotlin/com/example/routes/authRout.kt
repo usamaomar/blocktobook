@@ -71,9 +71,9 @@ fun Route.authRout(authDataSource: AuthDataSource) {
             val request = call.receiveModel<CreateTokenModel>()
             FirebaseAuth.getInstance().verifyIdToken(request.tokenId).run {
                 if(this!=null){
-                    call.respond(
-                        message = "authDataSource00-0-0 = ${authDataSource.idValue}"
-                    )
+//                    call.respond(
+//                        message = "authDataSource00-0-0 = ${authDataSource.idValue}"
+//                    )
                     val mapModel = authDataSource.loginByToken(CreateEmailModel(this.email, this.name ?: "user", this.uid))
                     call.respond(
                         message = mapModel?.get("ApiResponse") as ApiResponse<*>
