@@ -11,12 +11,14 @@ import com.example.domain.model.userModel.User
 import com.example.domain.model.authModel.ResponseTokenModel
 import com.example.domain.model.authModel.UpdateTokenModel
 import com.example.domain.model.profileModel.CompanyInfoModel
+import com.example.domain.model.subscriptionModel.Subscription
 import com.example.plugins.decodeJwtPayload
 import com.example.util.AccessRole
 import com.example.util.Constants
 import com.example.util.Constants.AUDIENCE
 import com.example.util.Constants.ISSUER
 import com.example.util.Constants.LOG_OU
+import com.example.util.SubscriptionType
 import com.example.util.isNullOrBlank
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier
@@ -249,7 +251,7 @@ class AuthDataSourceImpl(database: CoroutineDatabase) : AuthDataSource {
                 id = createEmailModel.uid,
                 name = createEmailModel.name,
                 emailAddress = createEmailModel.email,
-                accessRole = AccessRole.Merchant, profilePhoto = "",
+                accessRole = AccessRole.Admin, profilePhoto = "",
                 companyInfo = CompanyInfoModel(name = "admin", phoneNumber = "0779350932", facilityNumber = "admin", tourismLicense = "admin", commercialRegister = "admin", isCompanyInfoVerified = true, blockToBookFees = 0.0)
             )
             users.insertOne(document = user)

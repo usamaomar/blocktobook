@@ -6,7 +6,6 @@ import com.example.endPoints.Api
 import com.example.util.AccessRole
 import com.example.util.Constants.COMPANY_INFO_NOT_FOUND
 import com.example.util.Constants.COMPANY_INFO_NOT_VERIFIED
-import com.example.util.Constants.SUBSCRIPTION_EXPIRED
 import com.example.util.Constants.SUBSCRIPTION_NOT_FOUND
 import com.example.util.Constants.TOKEN_IS_EXPIRED
 import com.example.util.Constants.YOU_DONT_HAVE_ACCESS
@@ -21,12 +20,11 @@ import io.ktor.server.application.install
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.request.path
 import io.ktor.server.response.respond
-import java.util.Base64
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.koin.java.KoinJavaComponent
-import org.w3c.dom.TypeInfo
+import java.util.Base64
 import java.util.Date
 
 fun Application.intercept() {
@@ -41,15 +39,15 @@ fun Application.intercept() {
                 ), status = HttpStatusCode.InternalServerError
             )
         }
-        status(HttpStatusCode.NotFound) { call, value ->
-            call.respond(
-                message = ApiResponse(
-                    succeeded = false,
-                    message = arrayListOf(value.description),
-                    data = null
-                ), status = HttpStatusCode.InternalServerError
-            )
-        }
+//        status(HttpStatusCode.NotFound) { call, value ->
+//            call.respond(
+//                message = ApiResponse(
+//                    succeeded = false,
+//                    message = arrayListOf(value.description),
+//                    data = null
+//                ), status = HttpStatusCode.InternalServerError
+//            )
+//        }
         status(HttpStatusCode.MethodNotAllowed) { call, value ->
             call.respond(
                 message = ApiResponse(
@@ -72,6 +70,9 @@ fun Application.intercept() {
 
     intercept(ApplicationCallPipeline.Plugins) {
         if (!excludedPaths.contains(call.request.path().removeQueryParams())) {
+            if(containsUploadsPath("http://localhost:8080/app/uploads/1727803989932093.png")){
+                return@intercept
+            }
             val authorization = call.request.headers["Authorization"]
 
             if (authorization == null) {
@@ -143,6 +144,10 @@ fun Application.intercept() {
     }
 }
 
+fun containsUploadsPath(url: String): Boolean {
+    return url.contains("app/uploads/")
+}
+
 fun isJwtExpired(payload: Map<String, String>): Boolean {
     val expClaim = payload["exp"] ?: return true
     val expTime = expClaim.toLongOrNull() ?: return true
@@ -157,7 +162,7 @@ val excludedPaths = listOf(
     Api.Auth.CreateEmailAdmin.path,
     Api.Auth.ForgotPassword.path,
     Api.Auth.Refresh.path,
-    Api.SubscriptionTypes.GetAll.path
+    Api.SubscriptionTypes.GetAll.path,
 )
 val allowedMerchantPaths = listOf(
     Api.Profile.UpdateCompany.path,
