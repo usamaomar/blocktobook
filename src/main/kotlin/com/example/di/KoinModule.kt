@@ -43,7 +43,7 @@ import org.litote.kmongo.reactivestreams.KMongo
 
 val koinModule = module {
     single {
-        KMongo.createClient(System.getenv("MONGODB_URI")).coroutine.getDatabase(DATABASE_NAME)
+        KMongo.createClient().coroutine.getDatabase(DATABASE_NAME)
     }
     single<UserDataSource> {
         UserDataSourceImpl(get())
