@@ -52,13 +52,13 @@ inline fun <reified T : Any, reified R : Any> T.convertTo(): R {
 fun Long.toFormattedDateString(): String {
     val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ENGLISH)
     return Instant.ofEpochMilli(this)
-        .atZone(ZoneId.systemDefault())
+        .atZone(ZoneId.of("Asia/Amman"))
         .format(formatter)
 }
 fun Long.toFormattedDashDateString(): String {
     val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy", Locale.ENGLISH)
     return Instant.ofEpochMilli(this)
-        .atZone(ZoneId.systemDefault())
+        .atZone(ZoneId.of("Asia/Amman"))
         .format(formatter)
 }
 
@@ -66,14 +66,14 @@ fun Long.toFormattedDashDateString(): String {
 fun Long.toFormattedDashMonthDateString(): String {
     val formatter = DateTimeFormatter.ofPattern("MM", Locale.ENGLISH)
     return Instant.ofEpochMilli(this)
-        .atZone(ZoneId.systemDefault())
+        .atZone(ZoneId.of("Asia/Amman"))
         .format(formatter)
 }
 
 fun Long.toFormattedDashYearDateString(): String {
     val formatter = DateTimeFormatter.ofPattern("yyyy", Locale.ENGLISH)
     return Instant.ofEpochMilli(this)
-        .atZone(ZoneId.systemDefault())
+        .atZone(ZoneId.of("Asia/Amman"))
         .format(formatter)
 }
 

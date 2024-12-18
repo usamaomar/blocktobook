@@ -530,7 +530,7 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
         val localDate = LocalDate.parse(dateString, formatter)
 
         // Convert LocalDate to timestamp (epoch milliseconds)
-        return localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        return localDate.atStartOfDay(ZoneId.of("Asia/Amman")).toInstant().toEpochMilli()
     }
 
     private fun String.monthField() = "\$substr: ['$this', 3, 2]" // Extract MM
@@ -1159,7 +1159,7 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
         // Convert the LocalDate back to a timestamp at the start of the day (midnight)
 //        return localDate.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
 
-        val zoneId = ZoneId.systemDefault() // Change this if needed, e.g., ZoneId.of("GMT+2")
+        val zoneId = ZoneId.of("Asia/Amman") // Change this if needed, e.g., ZoneId.of("GMT+2")
         val localDate = Instant.ofEpochMilli(timestamp).atZone(zoneId).toLocalDate()
         return localDate.atStartOfDay(zoneId).toInstant().toEpochMilli()
 
