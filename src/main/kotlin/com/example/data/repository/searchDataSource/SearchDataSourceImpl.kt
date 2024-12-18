@@ -294,8 +294,6 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
 
                 queryForItemFilter.add(or(orConditions))
             }
-
-
         }
 
         val finalQuery =
@@ -309,6 +307,7 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
         val hasNextPage = pageNumber < totalPages
         return PagingApiResponse(
             succeeded = true,
+            message = arrayListOf(filterByDateTo?.toFormattedDashDateString()?:"", filterByDateFrom?.toFormattedDashDateString()?:"", filterByIdFromAirport?:"", filterByIdFromCity?:"", filterByIdToAirport?:"", filterByIdToCity?:""),
             data = airLinesTickets.find(finalQuery)
                 .sort(sortCriteria)
                 .skip(skip)
