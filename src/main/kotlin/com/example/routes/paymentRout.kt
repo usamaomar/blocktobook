@@ -177,8 +177,8 @@ fun Route.paymentRout() {
                     .header("Content-Type" to "application/x-www-form-urlencoded")
                     .responseString()
             }
-            val statsCode = extractCode(result.third.get())
-            if (statsCode == "800.100.156") {
+//            val statsCode = extractCode(result.third.get())
+//            if (statsCode == "800.100.156") {
                 val amounts: String = if (request.includeAmount == true) {
                     cartDataSource.getAmountWithCurrentWalletAmountWithBlockFees(
                         userId,
@@ -202,7 +202,7 @@ fun Route.paymentRout() {
                             message = ApiResponse(
                                 succeeded = true,
                                 message = arrayListOf("paymentRedirectUrl"),
-                                data = result.third.get(), errorCode = errorCode
+                                data = "result.third.get()", errorCode = errorCode
                             )
                         )
                     } else {
@@ -210,21 +210,21 @@ fun Route.paymentRout() {
                             message = ApiResponse(
                                 succeeded = false,
                                 message = arrayListOf("paymentRedirectUrl"),
-                                data = result.third.get(), errorCode = errorCode
+                                data = "result.third.get()", errorCode = errorCode
                             )
                         )
                     }
 
 
-                } else {
-                    call.respond(
-                        message = ApiResponse(
-                            succeeded = false,
-                            message = arrayListOf("paymentRedirectUrl"),
-                            data = result.third.get(), errorCode = errorCode
-                        )
-                    )
-                }
+//                } else {
+//                    call.respond(
+//                        message = ApiResponse(
+//                            succeeded = false,
+//                            message = arrayListOf("paymentRedirectUrl"),
+//                            data = result.third.get(), errorCode = errorCode
+//                        )
+//                    )
+//                }
             } else {
                 call.respond(
                     message = ApiResponse(
@@ -255,17 +255,17 @@ fun Route.paymentRout() {
             val paymentUrl = "https://eu-test.oppwa.com${request.resourcePath}"
             val authorizationBearer =
                 "Bearer OGE4Mjk0MTc0ZDA1OTViYjAxNGQwNWQ4MjllNzAxZDF8OVRuSlBjMm45aA=="
-            val result = withContext(Dispatchers.IO) {
-                val parameters = mutableListOf(
-                    "entityId" to "8a8294174d0595bb014d05d829cb01cd"
-                )
-                paymentUrl.httpGet(parameters)
-                    .header("Authorization" to authorizationBearer)
-                    .header("Content-Type" to "application/x-www-form-urlencoded")
-                    .responseString()
-            }
-            val statsCode = extractCode(result.third.get())
-            if (statsCode == "800.100.156") {
+//            val result = withContext(Dispatchers.IO) {
+//                val parameters = mutableListOf(
+//                    "entityId" to "8a8294174d0595bb014d05d829cb01cd"
+//                )
+//                paymentUrl.httpGet(parameters)
+//                    .header("Authorization" to authorizationBearer)
+//                    .header("Content-Type" to "application/x-www-form-urlencoded")
+//                    .responseString()
+//            }
+//            val statsCode = extractCode(result.third.get()) //todo update this
+//            if (statsCode == "800.100.156") {
                val amounts = if (request.includeAmount == true) {
                     cartDataSource.getAmountWithCurrentWalletAmountWithSubscription(
                         userId,
@@ -286,7 +286,7 @@ fun Route.paymentRout() {
                         message = ApiResponse(
                             succeeded = true,
                             message = arrayListOf("paymentRedirectUrl"),
-                            data = result.third.get(), errorCode = errorCode
+                            data = "result.third.get()", errorCode = errorCode
                         )
                     )
                 } else {
@@ -294,19 +294,19 @@ fun Route.paymentRout() {
                         message = ApiResponse(
                             succeeded = false,
                             message = arrayListOf("paymentRedirectUrl"),
-                            data = result.third.get(), errorCode = errorCode
+                            data = "result.third.get()", errorCode = errorCode
                         )
                     )
                 }
-            } else {
-                call.respond(
-                    message = ApiResponse(
-                        succeeded = false,
-                        message = arrayListOf("paymentRedirectUrl"),
-                        data = result.third.get(), errorCode = errorCode
-                    )
-                )
-            }
+//            } else {
+//                call.respond(
+//                    message = ApiResponse(
+//                        succeeded = false,
+//                        message = arrayListOf("paymentRedirectUrl"),
+//                        data = result.third.get(), errorCode = errorCode
+//                    )
+//                )
+//            }
         } catch (e: Exception) {
             call.respond(
                 message = ApiResponse(
