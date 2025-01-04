@@ -5,6 +5,8 @@ import com.example.data.repository.cartDataSource.validateCartAddition
 import com.example.data.repository.cityDataSource.ProfileDataSource
 import com.example.domain.model.adminWalletAmount.AdminWalletAmount
 import com.example.domain.model.airlinesTicketModel.ResponseAirlineTicketModel
+import com.example.domain.model.airportsModel.AirPortModel
+import com.example.domain.model.airportsModel.toResponseAirPortModel
 import com.example.domain.model.cartModel.CartModel
 import com.example.domain.model.cartModel.ResponseCartModel
 import com.example.domain.model.cartModel.toCartModel
@@ -63,6 +65,7 @@ class PurchaseDataSourceImpl(database: CoroutineDatabase) : PurchaseDataSource {
     private val adminWalletAmount = database.getCollection<AdminWalletAmount>()
     private val subscriptionTypeDatabase = database.getCollection<SubscriptionTypeModel>()
     val profileDataSource: ProfileDataSource by KoinJavaComponent.inject(ProfileDataSource::class.java)
+    private val airPortsdatabase = database.getCollection<AirPortModel>()
 
     private val hotels = database.getCollection<HotelModel>()
     private val cities = database.getCollection<CityModel>()
@@ -319,7 +322,7 @@ class PurchaseDataSourceImpl(database: CoroutineDatabase) : PurchaseDataSource {
                     createdAt = purchase.createdAt,
                     checkOutDate = purchase.checkOutDate,
                     checkInDate = purchase.checkInDate,
-                    numberOfRooms = purchase.numberOfRooms
+                    numberOfRooms = purchase.numberOfRooms,
                 )
             }
 
@@ -418,7 +421,8 @@ class PurchaseDataSourceImpl(database: CoroutineDatabase) : PurchaseDataSource {
                     id = purchase.id?.toHexString(),
                     hotelTicketModel = null,
                     airLineCustomerModels = purchase.airLineCustomerModels,
-                    airLineModel = purchase.airLineModel,
+                    airLineModel = purchase.airLineModel?.copy( departureAirport = airPortsdatabase.findOne(Filters.eq("_id", ObjectId(purchase.airLineModel.departureAirport?.id)))?.toResponseAirPortModel(),
+                    arrivalAirport = airPortsdatabase.findOne(Filters.eq("_id", ObjectId(purchase.airLineModel.arrivalAirport?.id)))?.toResponseAirPortModel(),),
                     returnAirLineModel = purchase.returnAirLineModel,
                     userId = purchase.userId,
                     checkoutId = purchase.checkoutId,
@@ -428,7 +432,7 @@ class PurchaseDataSourceImpl(database: CoroutineDatabase) : PurchaseDataSource {
                     createdAt = purchase.createdAt,
                     checkOutDate = purchase.checkOutDate,
                     checkInDate = purchase.checkInDate,
-                    numberOfRooms = purchase.numberOfRooms
+                    numberOfRooms = purchase.numberOfRooms,
                 )
             }
 
@@ -627,7 +631,8 @@ class PurchaseDataSourceImpl(database: CoroutineDatabase) : PurchaseDataSource {
                 ResponsePurchasedHotelTicketModel(
                     id = purchase.id?.toHexString(),
                     hotelTicketModel = null,
-                    airLineModel = purchase.airLineModel,
+                    airLineModel = purchase.airLineModel?.copy( departureAirport = airPortsdatabase.findOne(Filters.eq("_id", ObjectId(purchase.airLineModel?.departureAirport?.id)))?.toResponseAirPortModel(),
+                    arrivalAirport = airPortsdatabase.findOne(Filters.eq("_id", ObjectId(purchase.airLineModel?.arrivalAirport?.id)))?.toResponseAirPortModel(),),
                     returnAirLineModel = purchase.returnAirLineModel,
                     userId = purchase.userId,
                     checkoutId = purchase.checkoutId,

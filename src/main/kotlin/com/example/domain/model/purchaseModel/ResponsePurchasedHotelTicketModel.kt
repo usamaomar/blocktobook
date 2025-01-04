@@ -1,6 +1,7 @@
 package com.example.domain.model.purchaseModel
 
 import com.example.domain.model.airlinesTicketModel.ResponseAirlineTicketModel
+import com.example.domain.model.airportsModel.ResponseAirPortModel
 import com.example.domain.model.hotelTicketModel.ResponseHotelTicketModel
 import io.ktor.server.auth.Principal
 import kotlinx.serialization.Serializable
@@ -12,6 +13,7 @@ data class ResponsePurchasedHotelTicketModel(
     val hotelTicketModel: ResponseHotelTicketModel ? =null,
     val airLineModel: ResponseAirlineTicketModel? = null,
     val returnAirLineModel: ResponseAirlineTicketModel? =null,
+
     val userId: String,
     val checkoutId: String,
     val status: Int?=null,
