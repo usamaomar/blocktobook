@@ -84,6 +84,7 @@ class HotelTicketDataSourceImpl(database: CoroutineDatabase) : HotelTicketDataSo
                 fromDate = hotelTicketModel.fromDate,
                 toDate = hotelTicketModel.toDate,
                 roomClass = info.roomClass,
+                roomCategory = info.roomCategory,
                 transportation = info.transportation,
                 userId = userId,
                 isVisible = info.isVisible,
@@ -178,6 +179,10 @@ class HotelTicketDataSourceImpl(database: CoroutineDatabase) : HotelTicketDataSo
             Updates.set(
                 "roomClass",
                 if (updateHotelTicketModel.roomClass.isNullOrBlank()) ticketModel.roomClass else updateHotelTicketModel.roomClass
+            ),
+            Updates.set(
+                "roomCategory",
+                if (updateHotelTicketModel.roomCategory.isNullOrBlank()) ticketModel.roomCategory else updateHotelTicketModel.roomCategory
             ),
             Updates.set(
                 "transportation",

@@ -11,6 +11,7 @@ data class UpdateHotelTicketModel(
     val price: Double,
     val reservationDate: Long,
     val checkOutDate: Long,
+    val roomCategory: Int? = 0,
     val roomClass: Int,
     val transportation: Int ? = null,
     val isVisible: Boolean? = true,

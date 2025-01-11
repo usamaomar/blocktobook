@@ -6,6 +6,7 @@ object Constants {
     const val DATABASE_TEST = "database"
     const val DATABASE_NAME = "BLOCKTOBOOK"
 //    const val DATABASE_NAME = "cluster0.yew7v.mongodb.net"
+    const val sendgridToken = "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"
     const val COMPANY_INFO_NOT_FOUND = 2
     const val COMPANY_INFO_NOT_VERIFIED = 29
     const val SUBSCRIPTION_NOT_FOUND = 4

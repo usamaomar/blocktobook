@@ -11,6 +11,7 @@ data class ResponseHotelTicketModel(
     val ticketNumber: String? = null,
     val roomId: String? = null,
     val userId: String? = null,
+    val roomCategory: Int? = 0,
     val fromDate: Long,
     val toDate: Long,
     val roomClass: Int,

@@ -5,5 +5,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CreateTransaction(
-    val userId: String? = null
+    val userId: String? = null,
+    val topUpAmount: Double? = null
 ): Principal

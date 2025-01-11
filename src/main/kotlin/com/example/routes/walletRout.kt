@@ -1,5 +1,6 @@
 package com.example.routes
 
+import com.example.data.repository.authDataSource.isTimestampExpired
 import com.example.data.repository.cartDataSource.CartDataSource
 import com.example.data.repository.sendGrid.SendGridDataSource
 import com.example.data.repository.userDataSource.UserDataSource
@@ -36,18 +37,42 @@ fun Route.walletRoute() {
             val authorization = call.request.headers["Authorization"]
             val decodedPayload = decodeJwtPayload(authorization ?: "")
             val chargerId = decodedPayload["userId"] ?: ""
-            if(cartDataSource.getAmount(request.userId ?: "").toDouble() <=0){
+            val user = userDataSource.getUserInfo(request.userId ?: "")
+
+
+            if(user?.companyInfo == null){
                 call.respond(
                     message = ApiResponse(
                         succeeded = false,
-                        message = arrayListOf("Cart is empty"),
+                        message = arrayListOf("companyInfo is is not added"),
                         data = null, errorCode = errorCode), status = HttpStatusCode.ExpectationFailed)
                 return@post
             }
-            val blockToBookFees = userDataSource.getUserInfo(request.userId ?: "")?.companyInfo?.blockToBookFees ?: 10.0
+
+            if(!user.companyInfo.isCompanyInfoVerified){
+                call.respond(
+                    message = ApiResponse(
+                        succeeded = false,
+                        message = arrayListOf("companyInfo is is not Verified"),
+                        data = null, errorCode = errorCode), status = HttpStatusCode.ExpectationFailed)
+                return@post
+            }
+
+            if(user.subscription == null){
+                call.respond(
+                    message = ApiResponse(
+                        succeeded = false,
+                        message = arrayListOf("subscription is not added"),
+                        data = null, errorCode = errorCode), status = HttpStatusCode.ExpectationFailed)
+                return@post
+            }
+
+
+
+            val blockToBookFees = user.companyInfo.blockToBookFees ?: 10.0
             val pagingApiResponse = transactionDataSource.topUpWallet(
                 userId = request.userId ?: "",
-                amount = cartDataSource.getAmount(request.userId ?: "").toDouble(),
+                amount = request.topUpAmount ?: 0.0,
                 chargerId =chargerId ,
                 blockToBookFees = blockToBookFees,
                 transactionType = TransactionType.PLUS.ordinal,

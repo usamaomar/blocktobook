@@ -1,6 +1,7 @@
 package com.example.routes
 
 import com.example.data.repository.purchaseDataSource.PurchaseDataSource
+import com.example.data.repository.sendGrid.SendGridDataSource
 import com.example.domain.model.payment.CreatePaymentModel
 import com.example.domain.model.publicModel.ApiResponse
 import com.example.domain.model.publicModel.PagingApiResponse
@@ -30,6 +31,7 @@ private const val errorCode: Int = 959
 fun Route.purchaseRout() {
 
     val purchaseDataSource: PurchaseDataSource by KoinJavaComponent.inject(PurchaseDataSource::class.java)
+    val sendGridDataSource: SendGridDataSource by KoinJavaComponent.inject(SendGridDataSource::class.java)
 
     post(Api.Purchase.Checkout.path) {
         try {
@@ -172,6 +174,10 @@ fun Route.purchaseRout() {
             val decodedPayload = decodeJwtPayload(authorization ?: "")
             val purchaseData = purchaseDataSource.createOrUpdateCustomerInfoList(
                 userId = decodedPayload["userId"] ?: "", request
+            )
+            sendGridDataSource.sendEmailToAdminAndMerchantAfterUpdatingCustomer(
+                decodedPayload["userId"] ?: "",
+                request.purchasedAirlineTicketId ?: ""
             )
             call.respond(
                 message = purchaseData

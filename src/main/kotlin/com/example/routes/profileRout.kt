@@ -1,6 +1,7 @@
 package com.example.routes
 
 import com.example.data.repository.cityDataSource.ProfileDataSource
+import com.example.data.repository.sendGrid.SendGridDataSource
 import com.example.domain.model.publicModel.ApiResponse
 import com.example.domain.model.profileModel.CompanyInfoModel
 import com.example.domain.model.profileModel.CreateCompanyInfoModel
@@ -21,6 +22,7 @@ import io.ktor.server.routing.put
 import org.koin.java.KoinJavaComponent
 
 private const val errorCode: Int = 9
+val sendGridDataSource: SendGridDataSource by KoinJavaComponent.inject(SendGridDataSource::class.java)
 
 fun Route.profileRout() {
     val profileDataSource: ProfileDataSource by KoinJavaComponent.inject(ProfileDataSource::class.java)
@@ -102,9 +104,26 @@ fun Route.profileRout() {
 
     put(Api.Profile.UpdateUserCompany.path) {
         try {
+            val authorization = call.request.headers["Authorization"]
+            val decodedPayload = decodeJwtPayload(authorization ?: "")
             val request = call.receiveModel<UpdateCompanyInfoModel>()
             val responseCall =
                 profileDataSource.updateCompanyInfo(request.userId, request.toCompanyInfoModel())
+
+            if(request.isCompanyInfoVerified){
+                sendGridDataSource.confiramtionOfAccountApprove(
+                    request.userId,
+                    decodedPayload["userId"] ?: "",
+                    "تمت الموافقه على انشاء الحساب"
+                )
+            }else{
+                sendGridDataSource.confiramtionOfAccountApprove(
+                    request.userId,
+                    decodedPayload["userId"] ?: "",
+                    "تم تعطيل الحساب"
+                )
+            }
+
             call.respond(
                 message = responseCall ?: ApiResponse(
                     succeeded = false,
@@ -128,7 +147,23 @@ fun Route.profileRout() {
             val decodedPayload = decodeJwtPayload(authorization ?: "")
             val request = call.receiveModel<CreateCompanyInfoModel>()
             val responseCall =
-                profileDataSource.updateUserCompanyInfo(decodedPayload["userId"] ?: "", request.toCompanyInfoModelUser(blockToBookFees = 10.0, isCompanyInfoVerified = false))
+                profileDataSource.updateUserCompanyInfo(
+                    decodedPayload["userId"] ?: "",
+                    request.toCompanyInfoModelUser(
+                        blockToBookFees = 10.0,
+                        isCompanyInfoVerified = false
+                    )
+                )
+            val formattedMessage = """
+    قام بإنشاء حساب جديد:
+    اسم الشركة: ${request.name}
+    رقم الهاتف: ${request.phoneNumber}
+    رقم المنشأة: ${request.facilityNumber ?: "غير متوفر"}
+""".trimIndent()
+            sendGridDataSource.sendEmailToAllAdminsUsingSendGrid(
+                decodedPayload["userId"] ?: "",
+                formattedMessage
+            )
             call.respond(
                 message = responseCall ?: ApiResponse(
                     succeeded = false,

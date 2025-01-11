@@ -1,15 +1,10 @@
 package com.example.domain.model.cityModel
 
-
-import com.example.domain.model.subscriptionTypesModel.ResponsePostSubscriptionTypeModel
-import com.example.domain.model.subscriptionTypesModel.SubscriptionTypeModel
 import io.ktor.server.auth.Principal
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.bson.types.ObjectId
-import org.litote.kmongo.Id
-import org.litote.kmongo.id.toId
 
 @Serializable
 data class CityModel(

@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class HotelTicketInfoCreateModel(
     val roomClass: Int,
+    val roomCategory: Int? = 0,
     val isVisible: Boolean? = true,
     val numberOfRoomsPerNight: Int ? = 1,
     val transportation: Int ? = null,
