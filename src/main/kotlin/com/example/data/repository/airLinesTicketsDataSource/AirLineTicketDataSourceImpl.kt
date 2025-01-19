@@ -24,6 +24,7 @@ import org.bson.conversions.Bson
 import org.bson.types.ObjectId
 import org.litote.kmongo.and
 import org.litote.kmongo.coroutine.CoroutineDatabase
+import org.litote.kmongo.coroutine.aggregate
 import org.litote.kmongo.elemMatch
 import org.litote.kmongo.regex
 import java.security.SecureRandom
@@ -356,7 +357,7 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
                         arrivalAirport = airPortsdatabase.findOne(Filters.eq("_id", ObjectId(hotelTicketModel.arrivalAirportId)))?.toResponseAirPortModel(),
                         airLine = airLinesdatabase.findOne(Filters.eq("_id", ObjectId(hotelTicketModel.airLineId)))?.toResponseAirLineModel(),
                         returnAirLine = airLinesdatabase.findOne(Filters.eq("_id", ObjectId(hotelTicketModel.airLineId)))?.toResponseAirLineModel(),
-                        numberOfSeatsLeft = 0
+                        numberOfSeatsLeft = getTotalNumberOfRoomsForUser(userId ,hotelTicketModel.id?.toHexString(), hotelTicketModel.numberOfSeats?:0)
                     )
                 },
             currentPage = pageNumber,
@@ -367,22 +368,42 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
             errorCode = errorCode
         )
     }
-//    private suspend fun calculateAvailableRooms(hotelTicketId: ObjectId?, totalRooms: Int?): Int {
-//        if (hotelTicketId == null || totalRooms == null) {
-//            return 0 // Return 0 if no valid ticket ID or total rooms are provided
-//        }
-//
-//        // Query the PurchaseModel collection to find reservations for the given ticket ID
-//        val purchasedRooms = purchaseModel.aggregate(
-//            listOf(
-//                Filters.eq("hotelTicketModel.id", hotelTicketId),
-//                Aggregates.group(null, Accumulators.sum("totalRooms", "\$numberOfRooms"))
-//            )
-//        ).firstOrNull()?.getInteger("totalRooms") ?: 0
-//
-//        // Calculate the number of rooms left
-//        return totalRooms - purchasedRooms
-//    }
+
+    suspend fun getTotalNumberOfRoomsForUser(userId: String?,id: String?, totalRooms: Int): Int {
+        // Create a query filter to find all documents with the matching userId under airLineModel
+        val queryForItemFilter = mutableListOf<Bson>()
+        queryForItemFilter.add(Filters.eq("airLineModel.userId", userId))
+        queryForItemFilter.add(Filters.eq("airLineModel.id", id))
+
+        // Combine all filters into one final query
+        val finalQuery = and(queryForItemFilter)
+
+        // Fetch the documents that match the query
+        val documents = purchaseModel.find(finalQuery).toList()
+
+        // Sum the numberOfRooms field from all matching documents
+        val totalPurchased  = documents.sumOf { it.numberOfRooms }
+
+
+        return totalRooms - totalPurchased
+    }
+
+    private suspend fun calculateAvailableRooms(hotelTicketId: ObjectId?, totalRooms: Int?): Int {
+        // Return 0 if either the hotel ticket ID or total rooms is null
+        if (hotelTicketId == null || totalRooms == null) {
+            return 0 // No valid data to calculate available rooms
+        }
+
+        // Aggregate query to calculate the total number of rooms purchased for the given hotel ticket ID
+        val purchasedRooms = purchaseModel.aggregate<PurchaseModel>(
+            listOf(
+                Filters.eq("airLineModel.id", hotelTicketId.toHexString()),
+                Aggregates.group(null, Accumulators.sum("numberOfSeats", "\$numberOfRooms"))
+            )
+        ).first()?.numberOfRooms ?: 0
+        // Return the number of available rooms by subtracting purchased rooms from total rooms
+        return totalRooms - purchasedRooms
+    }
 
 
     public fun generateUniqueToken(length: Int = 24): String {

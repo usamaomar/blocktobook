@@ -43,6 +43,7 @@ import org.bson.conversions.Bson
 import org.bson.types.ObjectId
 import org.litote.kmongo.and
 import org.litote.kmongo.coroutine.CoroutineDatabase
+import org.litote.kmongo.div
 import org.litote.kmongo.elemMatch
 import org.litote.kmongo.eq
 import org.litote.kmongo.or
@@ -306,54 +307,59 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
             if (totalCount % (if (pageSize == 0) 1 else pageSize) == 0) totalCount / (if (pageSize == 0) 1 else pageSize) else (totalCount / (if (pageSize == 0) 1 else pageSize)) + 1
         val hasPreviousPage = pageNumber > 1
         val hasNextPage = pageNumber < totalPages
+
+        val listOfAirlinesTickets = airLinesTickets.find(finalQuery)
+            .sort(sortCriteria)
+            .skip(skip)
+            .limit(pageSize)
+            .toList()
+
+        val filteredTickets = listOfAirlinesTickets.filter { ticket ->
+            // Query the database for a matching purchase
+            val matchingPurchase = purchaseModel.findOne(
+                eq("airLineModel.id", ticket.id?.toHexString()) // Ensure this matches your schema
+            )
+
+            val purchasedSeats = matchingPurchase?.numberOfRooms ?: 0
+            val availableSeats = (ticket.numberOfSeats ?: 0) - purchasedSeats
+
+            // Return true if there are enough available seats
+            availableSeats >= (filterByAdultsTicketNumber ?: 1)
+        }
+
         return PagingApiResponse(
             succeeded = true,
-            message = arrayListOf(filterByDateTo?.toFormattedDashDateString()?:"", filterByDateFrom?.toFormattedDashDateString()?:"", filterByIdFromAirport?:"", filterByIdFromCity?:"", filterByIdToAirport?:"", filterByIdToCity?:""),
-            data = airLinesTickets.find(finalQuery)
-                .sort(sortCriteria)
-                .skip(skip)
-                .limit(pageSize)
-                .toList().map { hotelTicketModel ->
-                    hotelTicketModel.toResponseAirlineTicketModel(
-                        hotelTicketModel.id?.toHexString() ?: "",
-                        departureCity = citiesdatabase.findOne(
-                            eq(
-                                "_id",
-                                ObjectId(hotelTicketModel.departureCityId)
-                            )
-                        )?.toResponseCityModel(xAppLanguageId, ""),
-                        arrivalCity = citiesdatabase.findOne(
-                            eq(
-                                "_id",
-                                ObjectId(hotelTicketModel.arrivalCityId)
-                            )
-                        )?.toResponseCityModel(xAppLanguageId, ""),
-                        departureAirport = airPortsdatabase.findOne(
-                            eq(
-                                "_id",
-                                ObjectId(hotelTicketModel.departureAirportId)
-                            )
-                        )?.toResponseAirPortModel(),
-                        arrivalAirport = airPortsdatabase.findOne(
-                            eq(
-                                "_id",
-                                ObjectId(hotelTicketModel.arrivalAirportId)
-                            )
-                        )?.toResponseAirPortModel(),
-                        airLine = airLinesdatabase.findOne(
-                            eq(
-                                "_id",
-                                ObjectId(hotelTicketModel.airLineId)
-                            )
-                        )?.toResponseAirLineModel(),
-                        returnAirLine = airLinesdatabase.findOne(
-                            eq(
-                                "_id",
-                                ObjectId(hotelTicketModel.airLineId)
-                            )
-                        )?.toResponseAirLineModel(),
-                    )
-                },
+            message = arrayListOf(
+                filterByDateTo?.toFormattedDashDateString() ?: "",
+                filterByDateFrom?.toFormattedDashDateString() ?: "",
+                filterByIdFromAirport ?: "",
+                filterByIdFromCity ?: "",
+                filterByIdToAirport ?: "",
+                filterByIdToCity ?: ""
+            ),
+            data = filteredTickets.map { ticket ->
+                ticket.toResponseAirlineTicketModel(
+                    ticket.id?.toHexString() ?: "",
+                    departureCity = citiesdatabase.findOne(
+                        eq("_id", ObjectId(ticket.departureCityId))
+                    )?.toResponseCityModel(xAppLanguageId, ""),
+                    arrivalCity = citiesdatabase.findOne(
+                        eq("_id", ObjectId(ticket.arrivalCityId))
+                    )?.toResponseCityModel(xAppLanguageId, ""),
+                    departureAirport = airPortsdatabase.findOne(
+                        eq("_id", ObjectId(ticket.departureAirportId))
+                    )?.toResponseAirPortModel(),
+                    arrivalAirport = airPortsdatabase.findOne(
+                        eq("_id", ObjectId(ticket.arrivalAirportId))
+                    )?.toResponseAirPortModel(),
+                    airLine = airLinesdatabase.findOne(
+                        eq("_id", ObjectId(ticket.airLineId))
+                    )?.toResponseAirLineModel(),
+                    returnAirLine = airLinesdatabase.findOne(
+                        eq("_id", ObjectId(ticket.airLineId))
+                    )?.toResponseAirLineModel(),
+                )
+            },
             currentPage = pageNumber,
             totalPages = totalPages,
             totalCount = totalCount,
@@ -387,12 +393,6 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
         }
 
         if (directFlightOnly == true) {
-
-            // Filter by hotelId
-//            if (!filterByIdFromAirport.isNullOrEmpty()) {
-//                queryForItemFilter.add(eq("departureAirportId", filterByIdFromAirport))
-//            }
-
             if (!filterByIdFromCity.isNullOrEmpty()) {
                 queryForItemFilter.add(eq("departureCityId", filterByIdFromCity))
             }
@@ -405,27 +405,7 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
                     )
                 )
             }
-
         } else {
-            // Filter by hotelId
-//            if (!filterByIdFromAirport.isNullOrEmpty() || !filterByIdToAirport.isNullOrEmpty()) {
-//                val orConditions = mutableListOf<Bson>()
-//                orConditions.add(
-//                    and(
-//                        eq("departureAirportId", filterByIdFromAirport),
-//                        eq("arrivalAirportId", filterByIdToAirport)
-//                    )
-//                )
-//
-//                orConditions.add(
-//                    and(
-//                        eq("departureAirportId", filterByIdToAirport),
-//                        eq("arrivalAirportId", filterByIdFromAirport)
-//                    )
-//                )
-//                queryForItemFilter.add(or(orConditions))
-//            }
-
             if (!filterByIdFromCity.isNullOrEmpty() || !filterByIdToCity.isNullOrEmpty()) {
                 val orConditions = mutableListOf<Bson>()
                 orConditions.add(
@@ -456,13 +436,6 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
                 )
                 println("Filtering by month: $targetMonth, year: $targetYear (To)")
 
-//                val targetMonth = filterByDate.toFormattedDashMonthDateString() // Extract month
-//                val targetYear = filterByDate.toFormattedDashYearDateString() // Extract year
-//
-//                orConditions.add(
-//                    regex("departureDate", "^\\d{2}-$targetMonth-$targetYear$")
-//                )
-//                println("Filtering by month: $targetMonth, year: $targetYear (From)")
 
                 queryForItemFilter.add(or(orConditions))
             }
@@ -471,14 +444,28 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
         val finalQuery = if (queryForItemFilter.isNotEmpty()) and(queryForItemFilter) else Filters.empty()
         val sortCriteria = ascending("departureDate", "pricePerSeat")
        val listOfAirlinesTickets =  airLinesTickets.find(finalQuery).sort(sortCriteria).skip(skip).limit(pageSize).toList()
-        listOfAirlinesTickets.size
+
+
+        val filteredTickets = listOfAirlinesTickets.filter { ticket ->
+            // Query the database for a matching purchase
+            val matchingPurchase = purchaseModel.findOne(
+                eq("airLineModel.id", ticket.id?.toHexString()) // Ensure this matches your schema
+            )
+
+            val purchasedSeats = matchingPurchase?.numberOfRooms ?: 0
+            val availableSeats = (ticket.numberOfSeats ?: 0) - purchasedSeats
+
+            // Return true if there are enough available seats
+            availableSeats >= (filterByAdultsTicketNumber ?: 1)
+        }
+
         val listOfLongs = mutableListOf<Long>()
-        listOfAirlinesTickets.map {
+        filteredTickets.map {
              listOfLongs.add(dateStringToTimestamp(it.departureDate))
         }.toList()
         return PagingApiResponse(
             succeeded = true,
-            data = listOfAirlinesTickets.map { hotelTicketModel ->
+            data = filteredTickets.map { hotelTicketModel ->
                 hotelTicketModel.toResponseAirlineTicketModel(
                     hotelTicketModel.id?.toHexString() ?: "",
                     departureCity = citiesdatabase.findOne(

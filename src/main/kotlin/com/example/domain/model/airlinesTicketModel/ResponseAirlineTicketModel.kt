@@ -30,7 +30,7 @@ data class ResponseAirlineTicketModel(
     val travelClass: Int,
     val pricePerSeat: Double,
     val pricePerSeatRoundTrip: Double?=0.0,
-    val numberOfSeats: Int ? = 1,
+    val numberOfSeats: Int ? = 0,
     val numberOfSeatsLeft: Int ? = 0,
     val numberOfChildren: Int ? = 0,
     val totalAllowances: Int ? = 25,
