@@ -110,14 +110,21 @@ class CityDataSourceImpl(database: CoroutineDatabase) : CityDataSource {
     ): PagingApiResponse<List<ResponseCityModel>?> {
         val skip = (pageNumber - 1) * pageSize
         val query = and(
-            CityModel::profiles.elemMatch(
-                and(
-                    CityProfileModel::name regex searchText,
-                    or(
-                        CityProfileModel::languageId eq 1,
-                        CityProfileModel::languageId eq 2
+            or(
+                // Match in the name (beginning, middle, or end), case-insensitive
+                CityModel::profiles.elemMatch(
+                    and(
+                        CityProfileModel::name regex searchText.toRegex(RegexOption.IGNORE_CASE),
+                        or(
+                            CityProfileModel::languageId eq 1,
+                            CityProfileModel::languageId eq 2
+                        )
                     )
-                )
+                ),
+                // Match in the two-digit country code, case-insensitive
+                CityModel::twoDigitCountryCode regex searchText.toRegex(RegexOption.IGNORE_CASE),
+                // Match in the three-digit country code, case-insensitive
+                CityModel::threeDigitCountryCode regex searchText.toRegex(RegexOption.IGNORE_CASE)
             )
         )
         // Perform the query

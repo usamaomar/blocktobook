@@ -10,6 +10,7 @@ import com.example.domain.model.airportsModel.ResponseAirPortModel
 import com.example.domain.model.airportsModel.toResponseAirPortModel
 import com.example.domain.model.cityModel.CityModel
 import com.example.domain.model.cityModel.CityProfileModel
+import com.example.domain.model.cityModel.ResponseCityModel
 import com.example.domain.model.cityModel.toResponseCityModel
 import com.example.domain.model.hotelModel.HotelModel
 import com.example.domain.model.hotelModel.HotelProfileModel
@@ -933,6 +934,8 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
     }
 
 
+
+
     override suspend fun getAllByCityNameAndHotelName(
         searchText: String,
         pageSize: Int,
@@ -943,61 +946,24 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
         val skip = (pageNumber - 1) * pageSize
         val query = mutableListOf<Bson>()
 
-        // If the search text is not empty, search by hotel or city name
+        // If the search text is not empty, search by city name or country codes
         if (searchText.isNotEmpty()) {
-            // Search in hotel profiles
+            // Search by city name (supports partial matches)
             query.add(
-                HotelModel::profiles.elemMatch(
-                    HotelProfileModel::name regex searchText
+                CityModel::profiles.elemMatch(
+                    CityProfileModel::name regex Regex(".*${Regex.escape(searchText)}.*", RegexOption.IGNORE_CASE)
                 )
             )
 
-            // OR search by city name
-            val cityQuery = cities.find(
-                CityModel::profiles.elemMatch(
-                    CityProfileModel::name regex searchText
-                )
-            ).toList()
+            // Search by two-digit country code
+            query.add(CityModel::twoDigitCountryCode regex Regex("^${Regex.escape(searchText)}$", RegexOption.IGNORE_CASE))
 
-            // If city is found, return city data without hotels
-            if (cityQuery.isNotEmpty()) {
-                val cityResponse = cityQuery.map { cityModel ->
-                    ResponseHotelModel(
-                        id = "",
-                        name = "",
-                        profiles = null,
-                        logo = "",
-                        longitude = 0.0,
-                        latitude = 0.0,
-                        stars = 0.0,
-                        city = cityModel.toResponseCityModel(
-                            xAppLanguageId,
-                            cityModel.id?.toHexString() ?: ""
-                        )
-                    )
-                }
-                return PagingApiResponse(
-                    succeeded = true,
-                    data = cityResponse,
-                    currentPage = pageNumber,
-                    totalPages = 1,
-                    totalCount = cityResponse.size,
-                    hasPreviousPage = false,
-                    hasNextPage = false,
-                    errorCode = null
-                )
-            }
+            // Search by three-digit country code
+            query.add(CityModel::threeDigitCountryCode regex Regex("^${Regex.escape(searchText)}$", RegexOption.IGNORE_CASE))
         }
 
-        // If city is not found, proceed with the hotel search
-        query.add(
-            HotelModel::profiles.elemMatch(
-                HotelProfileModel::languageId eq xAppLanguageId
-            )
-        )
-
-        val finalQuery = and(query)
-        val totalCount = hotels.countDocuments(finalQuery).toInt()
+        val finalQuery = or(query)
+        val totalCount = cities.countDocuments(finalQuery).toInt()
         val totalPages = if (totalCount % (if (pageSize == 0) 1 else pageSize) == 0)
             totalCount / (if (pageSize == 0) 1 else pageSize)
         else (totalCount / (if (pageSize == 0) 1 else pageSize)) + 1
@@ -1005,103 +971,70 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
         val hasPreviousPage = pageNumber > 1
         val hasNextPage = pageNumber < totalPages
 
+        // Fetch city data matching the query
+        val cityQuery = cities.find(finalQuery)
+            .skip(skip)
+            .limit(pageSize)
+            .toList()
+
+        val cityResponse = cityQuery.map { cityModel ->
+            ResponseHotelModel(
+                id = "",
+                name = "",
+                profiles = null,
+                logo = "",
+                longitude = 0.0,
+                latitude = 0.0,
+                stars = 0.0,
+                city = cityModel.toResponseCityModel(
+                    xAppLanguageId,
+                    cityModel.id?.toHexString() ?: ""
+                )
+            )
+        }
+
         return PagingApiResponse(
             succeeded = true,
-            data = hotels.find(finalQuery)
-                .skip(skip)
-                .limit(pageSize)
-                .toList().mapNotNull { hotelModel ->
-                    val matchingProfile =
-                        hotelModel.profiles.find { it.languageId == xAppLanguageId }
-                    matchingProfile?.let {
-                        val filterCity = eq("_id", ObjectId(hotelModel.cityId))
-                        val cityModel = cities.findOne(filterCity)
-                        ResponseHotelModel(
-                            id = hotelModel.id?.toHexString() ?: "",
-                            name = it.name,
-                            profiles = hotelModel.profiles,
-                            logo = hotelModel.logo,
-                            longitude = hotelModel.longitude,
-                            latitude = hotelModel.latitude,
-                            stars = hotelModel.stars,
-                            city = cityModel?.toResponseCityModel(
-                                xAppLanguageId,
-                                cityModel.id?.toHexString() ?: ""
-                            )
-                        )
-                    }
-                },
+            data = cityResponse,
             currentPage = pageNumber,
             totalPages = totalPages,
             totalCount = totalCount,
             hasPreviousPage = hasPreviousPage,
             hasNextPage = hasNextPage,
-            errorCode = errorCode
+            errorCode = null
         )
     }
+
 
     override suspend fun getAllByCityNameAndAirportsName(
         searchText: String,
         pageSize: Int,
         pageNumber: Int,
         xAppLanguageId: Int
-    ): PagingApiResponse<List<ResponseAirPortModel>?> {
+    ): PagingApiResponse<List<ResponseCityModel>?> {
 
         val skip = (pageNumber - 1) * pageSize
         val query = mutableListOf<Bson>()
 
         // If the search text is not empty, search by hotel or city name
         if (searchText.isNotEmpty()) {
-            // Search in hotel profiles
+
             query.add(
-                HotelModel::profiles.elemMatch(
-                    HotelProfileModel::name regex searchText
+                CityModel::profiles.elemMatch(
+                    CityProfileModel::name regex Regex(".*${Regex.escape(searchText)}.*", RegexOption.IGNORE_CASE)
                 )
             )
 
-            // OR search by city name
-            val cityQuery = cities.find(
-                CityModel::profiles.elemMatch(
-                    CityProfileModel::name regex searchText
-                )
-            ).toList()
+            // Search by two-digit country code
+            query.add(CityModel::twoDigitCountryCode regex Regex("^${Regex.escape(searchText)}$", RegexOption.IGNORE_CASE))
 
-            // If city is found, return city data without airports
-            if (cityQuery.isNotEmpty()) {
-                val cityResponse = cityQuery.map { cityModel ->
-                    ResponseAirPortModel(
-                        id = "",
-                        name = "",
-                        profiles = null,
-                        code = "",
-                        city = cityModel.toResponseCityModel(
-                            xAppLanguageId,
-                            cityModel.id?.toHexString() ?: ""
-                        )
-                    )
-                }
-                return PagingApiResponse(
-                    succeeded = true,
-                    data = cityResponse,
-                    currentPage = pageNumber,
-                    totalPages = 1,
-                    totalCount = cityResponse.size,
-                    hasPreviousPage = false,
-                    hasNextPage = false,
-                    errorCode = null
-                )
-            }
+            // Search by three-digit country code
+            query.add(CityModel::threeDigitCountryCode regex Regex("^${Regex.escape(searchText)}$", RegexOption.IGNORE_CASE))
+
         }
 
-        // If city is not found, proceed with the hotel search
-        query.add(
-            HotelModel::profiles.elemMatch(
-                HotelProfileModel::languageId eq xAppLanguageId
-            )
-        )
-
-        val finalQuery = and(query)
-        val totalCount = airports.countDocuments(finalQuery).toInt()
+        val finalQuery = or(query)
+        val totalCount = cities.countDocuments(finalQuery).toInt()
         val totalPages = if (totalCount % (if (pageSize == 0) 1 else pageSize) == 0)
             totalCount / (if (pageSize == 0) 1 else pageSize)
         else (totalCount / (if (pageSize == 0) 1 else pageSize)) + 1
@@ -1111,24 +1044,20 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
 
         return PagingApiResponse(
             succeeded = true,
-            data = airports.find(finalQuery)
+            data = cities.find(finalQuery)
                 .skip(skip)
                 .limit(pageSize)
                 .toList().mapNotNull { hotelModel ->
                     val matchingProfile =
                         hotelModel.profiles.find { it.languageId == xAppLanguageId }
                     matchingProfile?.let {
-                        val filterCity = eq("_id", ObjectId(hotelModel.cityId))
-                        val cityModel = cities.findOne(filterCity)
-                        ResponseAirPortModel(
+                        ResponseCityModel(
                             id = hotelModel.id?.toHexString() ?: "",
                             name = it.name,
                             profiles = hotelModel.profiles,
-                            code = it.name,
-                            city = cityModel?.toResponseCityModel(
-                                xAppLanguageId,
-                                cityModel.id?.toHexString() ?: ""
-                            )
+                            countryName = it.countryName,
+                            twoDigitCountryCode = hotelModel.twoDigitCountryCode,
+                            threeDigitCountryCode = hotelModel.threeDigitCountryCode,
                         )
                     }
                 },
@@ -1141,80 +1070,14 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
         )
     }
 
-    fun getDateFromTimestamp(timestamp: Long): Date {
-        // Convert timestamp (milliseconds) to Date object
-        return Date(timestamp)
-    }
 
-    fun convertTimestampToFormattedDate(timestamp: Long): String {
-        val formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
-        val instant = Instant.ofEpochMilli(timestamp)
-        val dateTime = instant.atZone(ZoneId.of("UTC")) // You can change the time zone if needed
-        return formatter.format(dateTime)
-    }
 
     fun getDateAsTimestamp(timestamp: Long): Long {
-        // Convert the timestamp to LocalDate (UTC)
-//        val localDate = Instant.ofEpochMilli(timestamp).atZone(ZoneId.of("UTC")).toLocalDate()
-        // Convert the LocalDate back to a timestamp at the start of the day (midnight)
-//        return localDate.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
-
         val zoneId = ZoneId.of("Asia/Amman") // Change this if needed, e.g., ZoneId.of("GMT+2")
         val localDate = Instant.ofEpochMilli(timestamp).atZone(zoneId).toLocalDate()
         return localDate.atStartOfDay(zoneId).toInstant().toEpochMilli()
 
     }
 
-    fun getDateWithoutTime(date: Date): Date {
-        val calendar = Calendar.getInstance()
-        calendar.time = date
-        calendar.set(Calendar.HOUR_OF_DAY, 0) // Set time to midnight
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        return calendar.time
-    }
-
 }
 
-
-fun getDatesForMonth(
-    filterByDate: Long?,
-    hotelTickets: List<HotelTicketModel>
-): List<Long> {
-    if (filterByDate == null) return emptyList()
-
-    // Extract the month and year from filterByDate
-    val calendar = Calendar.getInstance().apply {
-        timeInMillis = filterByDate
-    }
-    val filterMonth = calendar.get(Calendar.MONTH)
-    val filterYear = calendar.get(Calendar.YEAR)
-
-    val resultDates = mutableListOf<Long>()
-
-
-
-    hotelTickets.forEach { ticket ->
-        val fromCalendar = Calendar.getInstance().apply { timeInMillis = ticket.fromDate }
-        val toCalendar = Calendar.getInstance().apply { timeInMillis = ticket.toDate }
-
-        // Iterate through the date range of the ticket
-        var currentDate = fromCalendar.clone() as Calendar
-
-        while (currentDate.timeInMillis <= toCalendar.timeInMillis) {
-            val currentMonth = currentDate.get(Calendar.MONTH)
-            val currentYear = currentDate.get(Calendar.YEAR)
-
-            // Check if the current date is within the filter month and year
-            if (currentMonth == filterMonth && currentYear == filterYear) {
-                resultDates.add(currentDate.timeInMillis)
-            }
-
-            // Move to the next day
-            currentDate.add(Calendar.DAY_OF_MONTH, 1)
-        }
-    }
-
-    return resultDates
-}

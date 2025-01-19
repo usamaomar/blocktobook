@@ -10,15 +10,14 @@ import com.example.domain.model.airlinesTicketModel.toResponseAirlineTicketModel
 import com.example.domain.model.airportsModel.AirPortModel
 import com.example.domain.model.airportsModel.toResponseAirPortModel
 import com.example.domain.model.cityModel.CityModel
-import com.example.domain.model.cityModel.ResponseCityModel
 import com.example.domain.model.cityModel.toResponseCityModel
 import com.example.domain.model.hotelModel.HotelModel
 import com.example.domain.model.hotelModel.HotelProfileModel
-import com.example.domain.model.hotelModel.toResponseHotelModel
-import com.example.domain.model.hotelTicketModel.ResponseHotelTicketModel
-import com.example.domain.model.hotelTicketModel.toResponseHotelTicketWithHotelModel
 import com.example.domain.model.publicModel.ApiResponse
 import com.example.domain.model.publicModel.PagingApiResponse
+import com.example.domain.model.purchaseModel.PurchaseModel
+import com.mongodb.client.model.Accumulators
+import com.mongodb.client.model.Aggregates
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Updates
 import org.bson.conversions.Bson
@@ -26,8 +25,6 @@ import org.bson.types.ObjectId
 import org.litote.kmongo.and
 import org.litote.kmongo.coroutine.CoroutineDatabase
 import org.litote.kmongo.elemMatch
-import org.litote.kmongo.eq
-import org.litote.kmongo.or
 import org.litote.kmongo.regex
 import java.security.SecureRandom
 import kotlin.random.asKotlinRandom
@@ -38,6 +35,7 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
     private val citiesdatabase = database.getCollection<CityModel>()
     private val airPortsdatabase = database.getCollection<AirPortModel>()
     private val airLinesdatabase = database.getCollection<AirLineModel>()
+    private val purchaseModel = database.getCollection<PurchaseModel>()
 
     private val errorCode: Int = 266
 
@@ -332,6 +330,12 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
             )
         }
 
+
+        val queryForPurchasedModels = mutableListOf<Bson>()
+        queryForPurchasedModels.add(Filters.eq("airLineModel.userId", userId))
+
+
+
         val finalQuery = and(queryForItemFilter)
         val totalCount = airLinesTickets.countDocuments(finalQuery).toInt()
         val totalPages =
@@ -352,6 +356,7 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
                         arrivalAirport = airPortsdatabase.findOne(Filters.eq("_id", ObjectId(hotelTicketModel.arrivalAirportId)))?.toResponseAirPortModel(),
                         airLine = airLinesdatabase.findOne(Filters.eq("_id", ObjectId(hotelTicketModel.airLineId)))?.toResponseAirLineModel(),
                         returnAirLine = airLinesdatabase.findOne(Filters.eq("_id", ObjectId(hotelTicketModel.airLineId)))?.toResponseAirLineModel(),
+                        numberOfSeatsLeft = 0
                     )
                 },
             currentPage = pageNumber,
@@ -362,7 +367,22 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
             errorCode = errorCode
         )
     }
-
+//    private suspend fun calculateAvailableRooms(hotelTicketId: ObjectId?, totalRooms: Int?): Int {
+//        if (hotelTicketId == null || totalRooms == null) {
+//            return 0 // Return 0 if no valid ticket ID or total rooms are provided
+//        }
+//
+//        // Query the PurchaseModel collection to find reservations for the given ticket ID
+//        val purchasedRooms = purchaseModel.aggregate(
+//            listOf(
+//                Filters.eq("hotelTicketModel.id", hotelTicketId),
+//                Aggregates.group(null, Accumulators.sum("totalRooms", "\$numberOfRooms"))
+//            )
+//        ).firstOrNull()?.getInteger("totalRooms") ?: 0
+//
+//        // Calculate the number of rooms left
+//        return totalRooms - purchasedRooms
+//    }
 
 
     public fun generateUniqueToken(length: Int = 24): String {

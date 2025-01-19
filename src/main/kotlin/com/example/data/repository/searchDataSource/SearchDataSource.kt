@@ -2,6 +2,7 @@ package com.example.data.repository.searchDataSource
 
 import com.example.domain.model.airlinesTicketModel.ResponseAirlineTicketModel
 import com.example.domain.model.airportsModel.ResponseAirPortModel
+import com.example.domain.model.cityModel.ResponseCityModel
 import com.example.domain.model.hotelModel.ResponseHotelModel
 import com.example.domain.model.hotelTicketModel.ResponseHotelTicketModel
 import com.example.domain.model.publicModel.ApiResponse
@@ -77,6 +78,6 @@ interface SearchDataSource {
     suspend fun getAllByCityNameAndAirportsName(searchText: String,
                        pageSize: Int,
                        pageNumber: Int,
-                       xAppLanguageId: Int): PagingApiResponse<List<ResponseAirPortModel>?>?
+                       xAppLanguageId: Int): PagingApiResponse<List<ResponseCityModel>?>?
 
 }
