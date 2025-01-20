@@ -448,12 +448,12 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
 
         val filteredTickets = listOfAirlinesTickets.filter { ticket ->
             // Query the database for a matching purchase
-            val matchingPurchase = purchaseModel.findOne(
+            val matchingPurchases = purchaseModel.find(
                 eq("airLineModel.id", ticket.id?.toHexString()) // Ensure this matches your schema
-            )
+            ).toList() // Convert the result to a list
 
-            val purchasedSeats = matchingPurchase?.numberOfRooms ?: 0
-            val availableSeats = (ticket.numberOfSeats ?: 0) - purchasedSeats
+            val totalPurchasedSeats = matchingPurchases.sumOf { it.numberOfRooms ?: 0 }
+            val availableSeats = (ticket.numberOfSeats ?: 0) - totalPurchasedSeats
 
             // Return true if there are enough available seats
             availableSeats >= (filterByAdultsTicketNumber ?: 1)
