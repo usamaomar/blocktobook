@@ -357,7 +357,7 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
                         arrivalAirport = airPortsdatabase.findOne(Filters.eq("_id", ObjectId(hotelTicketModel.arrivalAirportId)))?.toResponseAirPortModel(),
                         airLine = airLinesdatabase.findOne(Filters.eq("_id", ObjectId(hotelTicketModel.airLineId)))?.toResponseAirLineModel(),
                         returnAirLine = airLinesdatabase.findOne(Filters.eq("_id", ObjectId(hotelTicketModel.airLineId)))?.toResponseAirLineModel(),
-                        numberOfSeatsLeft = getTotalNumberOfRoomsForUser(userId ,hotelTicketModel.id?.toHexString(), hotelTicketModel.numberOfSeats?:0)
+                        numberOfSeatsLeft =  0
                     )
                 },
             currentPage = pageNumber,
@@ -388,22 +388,7 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
         return totalRooms - totalPurchased
     }
 
-    private suspend fun calculateAvailableRooms(hotelTicketId: ObjectId?, totalRooms: Int?): Int {
-        // Return 0 if either the hotel ticket ID or total rooms is null
-        if (hotelTicketId == null || totalRooms == null) {
-            return 0 // No valid data to calculate available rooms
-        }
 
-        // Aggregate query to calculate the total number of rooms purchased for the given hotel ticket ID
-        val purchasedRooms = purchaseModel.aggregate<PurchaseModel>(
-            listOf(
-                Filters.eq("airLineModel.id", hotelTicketId.toHexString()),
-                Aggregates.group(null, Accumulators.sum("numberOfSeats", "\$numberOfRooms"))
-            )
-        ).first()?.numberOfRooms ?: 0
-        // Return the number of available rooms by subtracting purchased rooms from total rooms
-        return totalRooms - purchasedRooms
-    }
 
 
     public fun generateUniqueToken(length: Int = 24): String {
