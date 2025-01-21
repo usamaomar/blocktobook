@@ -357,7 +357,7 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
                         arrivalAirport = airPortsdatabase.findOne(Filters.eq("_id", ObjectId(hotelTicketModel.arrivalAirportId)))?.toResponseAirPortModel(),
                         airLine = airLinesdatabase.findOne(Filters.eq("_id", ObjectId(hotelTicketModel.airLineId)))?.toResponseAirLineModel(),
                         returnAirLine = airLinesdatabase.findOne(Filters.eq("_id", ObjectId(hotelTicketModel.airLineId)))?.toResponseAirLineModel(),
-                        numberOfSeatsLeft =  0
+                        numberOfSeatsLeft = getTotalNumberOfRoomsForUser(userId ,hotelTicketModel.id?.toHexString(), hotelTicketModel.numberOfSeats?:0)
                     )
                 },
             currentPage = pageNumber,
