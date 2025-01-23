@@ -12,6 +12,7 @@ data class CreateCustomerModel(
     val passportUrl: String? = null,
     val visaUrl: String? = null,
     val note: String? = null,
+    val isInfant: Boolean? = false,
 ): Principal
 
 
@@ -24,5 +25,6 @@ fun CreateCustomerModel.toCustomerModel(): CustomerModel {
         passportUrl = this.passportUrl,
         visaUrl = this.visaUrl,
         note = this.note,
+        isInfant = this.isInfant
     )
 }

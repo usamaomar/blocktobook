@@ -16,6 +16,7 @@ fun List<CreateCustomerModel>?.toCustomerModelList(
     passportUrl: String? = null,
     visaUrl: String? = null,
     note: String? = null,
+    isInfant: Boolean? = false,
 ): List<CustomerModel> {
     return this?.map { createCustomer ->
         CustomerModel(
@@ -24,7 +25,8 @@ fun List<CreateCustomerModel>?.toCustomerModelList(
             middleName = middleName ?: createCustomer.middleName,
             passportUrl = passportUrl ?: createCustomer.passportUrl,
             visaUrl = visaUrl ?: createCustomer.visaUrl,
-            note = note ?: createCustomer.note
+            note = note ?: createCustomer.note,
+            isInfant = isInfant ?: createCustomer.isInfant
         )
     } ?: emptyList()
 }

@@ -11,4 +11,5 @@ data class CustomerModel(
     val passportUrl: String? = null,
     val visaUrl: String? = null,
     val note: String? = null,
-): Principal
+    val isInfant: Boolean? = false,
+) : Principal
