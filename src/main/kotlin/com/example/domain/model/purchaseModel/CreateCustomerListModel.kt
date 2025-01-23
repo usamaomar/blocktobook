@@ -16,7 +16,7 @@ fun List<CreateCustomerModel>?.toCustomerModelList(
     passportUrl: String? = null,
     visaUrl: String? = null,
     note: String? = null,
-    isInfant: Boolean? = false,
+    isInfant: Boolean? = null,
 ): List<CustomerModel> {
     return this?.map { createCustomer ->
         CustomerModel(
