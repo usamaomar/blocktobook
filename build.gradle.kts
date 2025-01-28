@@ -104,6 +104,7 @@ dependencies {
     ///SendGrid
     implementation("com.sendgrid:sendgrid-java:4.9.3") // or the latest version
 
+    implementation("io.ktor:ktor-server-cio:$ktorVersion")
 
 
 
