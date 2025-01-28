@@ -42,8 +42,8 @@ dependencies {
     implementation("io.ktor:ktor-server-call-logging-jvm:$ktorVersion")
     implementation("io.ktor:ktor-server-netty-jvm:$ktorVersion")
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
-    implementation("com.android.identity:identity-doctypes-jvm:202411.1")
-    implementation("com.google.firebase:firebase-crashlytics-buildtools:3.0.2")
+//    implementation("com.android.identity:identity-doctypes-jvm:202411.1")
+//    implementation("com.google.firebase:firebase-crashlytics-buildtools:3.0.2")
     testImplementation("io.ktor:ktor-server-test-host-jvm:$ktorVersion")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")
 
