@@ -10,7 +10,6 @@ import com.example.data.repository.walletDataSource.TransactionDataSource
 import com.example.domain.model.payment.CreatePaymentIncludeAmount
 import com.example.domain.model.payment.CreatePaymentModel
 import com.example.domain.model.publicModel.ApiResponse
-import com.example.domain.model.purchaseModel.PaymentOnlineModel
 import com.example.domain.model.transactionModel.TransactionModel
 import com.example.endPoints.Api
 import com.example.plugins.decodeJwtPayload

@@ -11,7 +11,6 @@ import com.example.domain.model.cartModel.CartModel
 import com.example.domain.model.cartModel.CreateCartModel
 import com.example.domain.model.cartModel.ResponseCartModel
 import com.example.domain.model.cartModel.toCartModel
-import com.example.domain.model.cartModel.toResponseCartModel
 import com.example.domain.model.cityModel.ResponseCityModel
 import com.example.domain.model.cityModel.toResponseCityModel
 import com.example.domain.model.hotelModel.HotelModel
@@ -22,7 +21,6 @@ import com.example.domain.model.hotelTicketModel.ResponseHotelTicketModel
 import com.example.domain.model.hotelTicketModel.toResponseHotelTicketModel
 import com.example.domain.model.publicModel.ApiResponse
 import com.example.domain.model.publicModel.PagingApiResponse
-import com.example.domain.model.purchaseModel.DatesModel
 import com.example.domain.model.purchaseModel.PurchaseModel
 import com.example.domain.model.subscriptionTypesModel.SubscriptionTypeModel
 import com.example.domain.model.userModel.User
@@ -319,7 +317,8 @@ class CartDataSourceImpl(database: CoroutineDatabase) : CartDataSource {
                     userId = cartModel.userId,
                     checkOutDate = cartModel.checkOutDate,
                     checkInDate = cartModel.checkInDate,
-                    numberOfRooms = cartModel.numberOfRooms
+                    numberOfRooms = cartModel.numberOfRooms,
+                    numberOfInfants = cartModel.numberOfInfants,
                 )
             }
 

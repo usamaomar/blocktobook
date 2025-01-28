@@ -1,6 +1,5 @@
 package com.example.domain.model.cartModel
 
-import com.example.domain.model.airlinesModel.ResponseAirLineModel
 import com.example.domain.model.airlinesTicketModel.ResponseAirlineTicketModel
 import com.example.domain.model.hotelTicketModel.ResponseHotelTicketModel
 import io.ktor.server.auth.Principal
@@ -13,7 +12,9 @@ data class CreateCartModel(
     val returnAirLineTripId: String?,
     val checkInDate: Long,
     val checkOutDate: Long,
-    val numberOfRooms: Int) : Principal
+    val numberOfRooms: Int,
+    val numberOfInfants: Int? = null,
+) : Principal
 
 
 fun CreateCartModel.toCartModel(
@@ -30,21 +31,7 @@ fun CreateCartModel.toCartModel(
         checkInDate = this.checkInDate,
         checkOutDate = this.checkOutDate,
         numberOfRooms = this.numberOfRooms,
+        numberOfInfants = this.numberOfInfants,
     )
 }
 
-
-fun CreateCartModel.toResponseCartModel(
-    userId: String,
-    hotelTicketModel: ResponseHotelTicketModel?,
-    airLineModel: ResponseAirlineTicketModel?,
-): ResponseCartModel {
-    return ResponseCartModel(
-        hotelTicketModel = hotelTicketModel,
-        airLineModel = airLineModel,
-        userId = userId,
-        checkInDate = this.checkInDate,
-        checkOutDate = this.checkOutDate,
-        numberOfRooms = this.numberOfRooms
-    )
-}

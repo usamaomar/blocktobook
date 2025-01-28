@@ -16,6 +16,7 @@ data class ResponseCartModel(
     val checkInDate: Long,
     val checkOutDate: Long,
     val numberOfRooms: Int,
+    val numberOfInfants: Int ? = null,
 ) : Principal
 
 
@@ -30,7 +31,8 @@ fun ResponseCartModel.toPurchaseModel(createdAt: Long,checkoutId : String): Purc
         checkInDate = checkInDate,
         checkOutDate = checkOutDate,
         checkoutId = checkoutId,
-        numberOfRooms = numberOfRooms
+        numberOfRooms = numberOfRooms,
+        numberOfInfants = numberOfInfants
     )
 }
 
@@ -43,6 +45,7 @@ fun ResponseCartModel.toCartModel(): CartModel {
         userId = userId,
         checkInDate = checkInDate,
         checkOutDate = checkOutDate,
-        numberOfRooms = numberOfRooms
+        numberOfRooms = numberOfRooms,
+        numberOfInfants = numberOfInfants
     )
 }

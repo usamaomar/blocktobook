@@ -12,6 +12,10 @@ data class AirlineTicketInfoModel(
     val numberOfChildren: Int ? = 0,
     val totalAllowances: Int ? = 25,
     val childAge: Int ? = 0,
+    val flightNumber: String? = null,
+    val flightNumberRoundTrip: String? = null,
+    val pricePerInfant: Double? = 0.0,
+    val pricePerInfantRoundTrip: Double? = 0.0,
     val isVisible: Boolean? = true,
 ) : Principal
 

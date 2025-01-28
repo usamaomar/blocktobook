@@ -71,6 +71,9 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
                     totalAllowances = info.totalAllowances,
                     childAge = info.childAge,
                     isVisible = info.isVisible,
+                    flightNumber = info.flightNumberRoundTrip,
+                    pricePerInfantRoundTrip = info.pricePerInfantRoundTrip,
+                    pricePerInfant = info.pricePerInfant,
                 )
                 airlineTicketsToInsert.add(hotelTicket)
             }
@@ -99,6 +102,9 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
                 totalAllowances = info.totalAllowances,
                 childAge = info.childAge,
                 isVisible = info.isVisible,
+                flightNumber = info.flightNumber,
+                pricePerInfantRoundTrip = info.pricePerInfantRoundTrip,
+                pricePerInfant = info.pricePerInfant,
             )
             airlineTicketsToInsert.add(hotelTicket)
         }
@@ -130,6 +136,37 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
         updateAirlineTicketModel: UpdateAirlineTicketModel
     ): ApiResponse<String?> {
         val filter = Filters.eq("_id", ObjectId(updateAirlineTicketModel.id))
+
+        val airlineTicketModel = purchaseModel.findOne(
+            Filters.eq(
+                "airLineModel.id",
+                updateAirlineTicketModel.id
+            )
+        )
+
+        if(airlineTicketModel!=null){
+            return ApiResponse(
+                data = null,
+                succeeded = false,
+                message = arrayListOf("Ticket Is purchased"),
+                errorCode = errorCode)
+        }
+
+        val returnAirlineTicketModel = purchaseModel.findOne(
+            Filters.eq(
+                "airLineModel.returnAirLineModel.id",
+                updateAirlineTicketModel.id
+            )
+        )
+
+        if(returnAirlineTicketModel!=null){
+            return ApiResponse(
+                data = null,
+                succeeded = false,
+                message = arrayListOf("Ticket Is purchased"),
+                errorCode = errorCode)
+        }
+
         val ticketModel = airLinesTickets.findOne(filter)
             ?: return ApiResponse(
                 data = null,
@@ -148,34 +185,34 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
         }
 
         val update = Updates.combine(
-//            Updates.set(
-//                "departureCityId",
-//                if (updateAirlineTicketModel.departureCityId.isNullOrBlank()) ticketModel.departureCityId else updateAirlineTicketModel.departureCityId
-//            ),
-//            Updates.set(
-//                "arrivalCityId",
-//                if (updateAirlineTicketModel.arrivalCityId.isNullOrBlank()) ticketModel.arrivalCityId else updateAirlineTicketModel.arrivalCityId
-//            ),
-//            Updates.set(
-//                "departureAirportId",
-//                if (updateAirlineTicketModel.departureAirportId.isNullOrBlank()) ticketModel.departureAirportId else updateAirlineTicketModel.departureAirportId
-//            ),
-//            Updates.set(
-//                "arrivalAirportId",
-//                if (updateAirlineTicketModel.arrivalAirportId.isNullOrBlank()) ticketModel.arrivalAirportId else updateAirlineTicketModel.arrivalAirportId
-//            ),
-//            Updates.set(
-//                "airLineId",
-//                if (updateAirlineTicketModel.airLineId.isNullOrBlank()) ticketModel.airLineId else updateAirlineTicketModel.airLineId
-//            ),
-//            Updates.set(
-//                "departureDate",
-//                if (updateAirlineTicketModel.departureDate.isNullOrBlank()) ticketModel.departureDate else updateAirlineTicketModel.departureDate
-//            ),
-//            Updates.set(
-//                "arrivalDate",
-//                if (updateAirlineTicketModel.arrivalDate.isNullOrBlank()) ticketModel.arrivalDate else updateAirlineTicketModel.arrivalDate
-//            ),
+            Updates.set(
+                "departureCityId",
+                if (updateAirlineTicketModel.departureCityId.isNullOrBlank()) ticketModel.departureCityId else updateAirlineTicketModel.departureCityId
+            ),
+            Updates.set(
+                "arrivalCityId",
+                if (updateAirlineTicketModel.arrivalCityId.isNullOrBlank()) ticketModel.arrivalCityId else updateAirlineTicketModel.arrivalCityId
+            ),
+            Updates.set(
+                "departureAirportId",
+                if (updateAirlineTicketModel.departureAirportId.isNullOrBlank()) ticketModel.departureAirportId else updateAirlineTicketModel.departureAirportId
+            ),
+            Updates.set(
+                "arrivalAirportId",
+                if (updateAirlineTicketModel.arrivalAirportId.isNullOrBlank()) ticketModel.arrivalAirportId else updateAirlineTicketModel.arrivalAirportId
+            ),
+            Updates.set(
+                "airLineId",
+                if (updateAirlineTicketModel.airLineId.isNullOrBlank()) ticketModel.airLineId else updateAirlineTicketModel.airLineId
+            ),
+            Updates.set(
+                "departureDate",
+                if (updateAirlineTicketModel.departureDate.isNullOrBlank()) ticketModel.departureDate else updateAirlineTicketModel.departureDate
+            ),
+            Updates.set(
+                "arrivalDate",
+                if (updateAirlineTicketModel.arrivalDate.isNullOrBlank()) ticketModel.arrivalDate else updateAirlineTicketModel.arrivalDate
+            ),
             Updates.set(
                 "departureTime",
                 if (updateAirlineTicketModel.departureTime.isNullOrBlank()) ticketModel.departureTime else updateAirlineTicketModel.departureTime
@@ -184,34 +221,46 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
                 "arrivalTime",
                 if (updateAirlineTicketModel.arrivalTime.isNullOrBlank()) ticketModel.arrivalTime else updateAirlineTicketModel.arrivalTime
             ),
-//            Updates.set(
-//                "travelClass",
-//                if (updateAirlineTicketModel.travelClass == 0) ticketModel.travelClass else updateAirlineTicketModel.travelClass
-//            ),
-//            Updates.set(
-//                "pricePerSeat",
-//                if (updateAirlineTicketModel.pricePerSeat == 0.0) ticketModel.pricePerSeat else updateAirlineTicketModel.pricePerSeat
-//            ),
-//            Updates.set(
-//                "pricePerSeatRoundTrip",
-//                updateAirlineTicketModel.pricePerSeatRoundTrip ?: ticketModel.pricePerSeatRoundTrip
-//            ),
-//            Updates.set(
-//                "numberOfSeats",
-//                updateAirlineTicketModel.numberOfSeats ?: ticketModel.numberOfSeats
-//            ),
-//            Updates.set(
-//                "numberOfChildren",
-//                updateAirlineTicketModel.numberOfChildren ?: ticketModel.numberOfChildren
-//            ),
-//            Updates.set(
-//                "totalAllowances",
-//                updateAirlineTicketModel.totalAllowances ?: ticketModel.totalAllowances
-//            ),
-//            Updates.set(
-//                "childAge",
-//                updateAirlineTicketModel.childAge ?: ticketModel.childAge
-//            ),
+            Updates.set(
+                "travelClass",
+                if (updateAirlineTicketModel.travelClass == 0) ticketModel.travelClass else updateAirlineTicketModel.travelClass
+            ),
+            Updates.set(
+                "pricePerSeat",
+                if (updateAirlineTicketModel.pricePerSeat == 0.0) ticketModel.pricePerSeat else updateAirlineTicketModel.pricePerSeat
+            ),
+            Updates.set(
+                "pricePerSeatRoundTrip",
+                updateAirlineTicketModel.pricePerSeatRoundTrip ?: ticketModel.pricePerSeatRoundTrip
+            ),
+            Updates.set(
+                "numberOfSeats",
+                updateAirlineTicketModel.numberOfSeats ?: ticketModel.numberOfSeats
+            ),
+            Updates.set(
+                "numberOfChildren",
+                updateAirlineTicketModel.numberOfChildren ?: ticketModel.numberOfChildren
+            ),
+            Updates.set(
+                "flightNumber",
+                updateAirlineTicketModel.flightNumber ?: ticketModel.flightNumber
+            ),
+            Updates.set(
+                "pricePerInfant",
+                if(updateAirlineTicketModel.numberOfChildren == 0)  0.0 else (updateAirlineTicketModel.pricePerInfant ?: ticketModel.pricePerInfant)
+            ),
+            Updates.set(
+                "pricePerInfantRoundTrip",
+                if(updateAirlineTicketModel.numberOfChildren == 0)  0.0 else (updateAirlineTicketModel.pricePerInfantRoundTrip ?: ticketModel.pricePerInfantRoundTrip)
+            ),
+            Updates.set(
+                "totalAllowances",
+                updateAirlineTicketModel.totalAllowances ?: ticketModel.totalAllowances
+            ),
+            Updates.set(
+                "childAge",
+                updateAirlineTicketModel.childAge ?: ticketModel.childAge
+            ),
             Updates.set(
                 "isVisible",
                 updateAirlineTicketModel.isVisible ?: ticketModel.isVisible
@@ -325,11 +374,6 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
             )
         }
 
-        if (filterByVisibility != null) {
-            queryForItemFilter.add(
-                Filters.eq("isVisible", filterByVisibility)
-            )
-        }
 
 
         val queryForPurchasedModels = mutableListOf<Bson>()

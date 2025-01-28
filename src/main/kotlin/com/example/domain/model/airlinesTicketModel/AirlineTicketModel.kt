@@ -34,6 +34,9 @@ data class AirlineTicketModel(
     val totalAllowances: Int? = 25,
     val childAge: Int? = 0,
     val isVisible: Boolean? = null,
+    val flightNumber: String? = null,
+    val pricePerInfant: Double? = 0.0,
+    val pricePerInfantRoundTrip: Double? = 0.0,
 ) : Principal
 
 
@@ -69,6 +72,9 @@ fun AirlineTicketModel.toResponseAirlineTicketModel(
         numberOfSeatsLeft =  numberOfSeatsLeft,
         numberOfChildren = this.numberOfChildren,
         totalAllowances = this.totalAllowances,
-        childAge = this.childAge
+        childAge = this.childAge,
+        flightNumber = this.flightNumber,
+        pricePerInfant = this.pricePerInfant,
+        pricePerInfantRoundTrip = this.pricePerInfantRoundTrip,
     )
 }

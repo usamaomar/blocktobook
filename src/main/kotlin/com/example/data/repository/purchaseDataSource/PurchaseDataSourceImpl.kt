@@ -20,7 +20,6 @@ import com.example.domain.model.publicModel.PagingApiResponse
 import com.example.domain.model.purchaseModel.CreateCustomerListModel
 import com.example.domain.model.purchaseModel.CreateCustomerModel
 import com.example.domain.model.purchaseModel.CustomerModel
-import com.example.domain.model.purchaseModel.DatesModel
 import com.example.domain.model.purchaseModel.PurchaseModel
 import com.example.domain.model.purchaseModel.ResponsePurchasedHotelTicketModel
 import com.example.domain.model.purchaseModel.toCustomerModel
@@ -125,6 +124,7 @@ class PurchaseDataSourceImpl(database: CoroutineDatabase) : PurchaseDataSource {
                         throw IllegalArgumentException("Error: Not enough seats available for the requested number.")
                     }
                 }
+
 
                 val returnAirlineTicketModel = purchaseModel.find(
                     Filters.eq(
@@ -433,6 +433,7 @@ class PurchaseDataSourceImpl(database: CoroutineDatabase) : PurchaseDataSource {
                     checkOutDate = purchase.checkOutDate,
                     checkInDate = purchase.checkInDate,
                     numberOfRooms = purchase.numberOfRooms,
+                    numberOfInfants = purchase.numberOfInfants,
                 )
             }
 
@@ -642,6 +643,7 @@ class PurchaseDataSourceImpl(database: CoroutineDatabase) : PurchaseDataSource {
                     checkOutDate = purchase.checkOutDate,
                     checkInDate = purchase.checkInDate,
                     numberOfRooms = purchase.numberOfRooms,
+                    numberOfInfants = purchase.numberOfInfants,
                     airLineCustomerModels = purchase.airLineCustomerModels
                 )
             }
@@ -972,13 +974,12 @@ class PurchaseDataSourceImpl(database: CoroutineDatabase) : PurchaseDataSource {
             cartDataSource.delete(userId, cartModel.id ?: "")
             val total = if (cartModel.returnAirLineTicketModel != null) {
                 if (cartModel.returnAirLineTicketModel.roundTripId == cartModel.airLineModel?.roundTripId) {
-                    (cartModel.airLineModel?.pricePerSeatRoundTrip ?: 0.0) * cartModel.numberOfRooms
+                    ( (cartModel.airLineModel?.pricePerSeatRoundTrip ?: 0.0) * cartModel.numberOfRooms ) + ( (cartModel.airLineModel?.pricePerInfantRoundTrip ?: 0.0) * (cartModel.numberOfInfants ?: 0) )
                 } else {
-                    ((cartModel.airLineModel?.pricePerSeat
-                        ?: 0.0) + (cartModel.returnAirLineTicketModel.pricePerSeat)) * cartModel.numberOfRooms
+                    ( ((cartModel.airLineModel?.pricePerSeat ?: 0.0) + (cartModel.returnAirLineTicketModel.pricePerSeat)) * cartModel.numberOfRooms) + ( ((cartModel.airLineModel?.pricePerInfant ?: 0.0) + (cartModel.returnAirLineTicketModel.pricePerInfant?:0.0)) * (cartModel.numberOfInfants?:0))
                 }
             } else {
-                (cartModel.airLineModel?.pricePerSeat ?: 0.0) * cartModel.numberOfRooms
+                ( (cartModel.airLineModel?.pricePerSeat ?: 0.0) * cartModel.numberOfRooms) + ( (cartModel.airLineModel?.pricePerInfant ?: 0.0) * (cartModel.numberOfInfants?:0))
             }
             updateWallets(
                 buyerId = cartModel.userId,

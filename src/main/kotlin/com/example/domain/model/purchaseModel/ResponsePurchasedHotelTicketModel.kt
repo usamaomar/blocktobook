@@ -13,7 +13,6 @@ data class ResponsePurchasedHotelTicketModel(
     val hotelTicketModel: ResponseHotelTicketModel ? =null,
     val airLineModel: ResponseAirlineTicketModel? = null,
     val returnAirLineModel: ResponseAirlineTicketModel? =null,
-
     val userId: String,
     val checkoutId: String,
     val status: Int?=null,
@@ -23,6 +22,7 @@ data class ResponsePurchasedHotelTicketModel(
     val customerModel: CustomerModel? = null,
     val airLineCustomerModels: List<CustomerModel>? = null,
     val createdAt: Long? =0,
-    val numberOfRooms: Int
+    val numberOfRooms: Int,
+    val numberOfInfants: Int ? = null
 ): Principal
 

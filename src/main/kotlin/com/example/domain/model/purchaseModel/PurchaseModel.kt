@@ -24,5 +24,6 @@ data class PurchaseModel(
     val customerModel: CustomerModel? = null,
     val airLineCustomerModels: List<CustomerModel>? = null,
     val createdAt: Long? =0,
-    val numberOfRooms: Int
+    val numberOfRooms: Int,
+    val numberOfInfants: Int ? = null
 ): Principal

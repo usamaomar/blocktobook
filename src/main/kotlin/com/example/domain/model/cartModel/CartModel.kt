@@ -20,6 +20,7 @@ data class CartModel(
     val checkInDate: Long,
     val checkOutDate: Long,
     val numberOfRooms: Int,
+    val numberOfInfants: Int? = null,
 ) : Principal
 
 

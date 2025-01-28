@@ -30,12 +30,15 @@ data class ResponseAirlineTicketModel(
     val travelClass: Int,
     val pricePerSeat: Double,
     val pricePerSeatRoundTrip: Double?=0.0,
+    val pricePerInfantRoundTrip: Double?=0.0,
     val numberOfSeats: Int ? = 0,
     val numberOfSeatsLeft: Int ? = 0,
     val numberOfChildren: Int ? = 0,
     val totalAllowances: Int ? = 25,
     val childAge: Int ? = 0,
     val isVisible: Boolean? = null,
+    val flightNumber: String? = null,
+    val pricePerInfant: Double? = 0.0,
 ) : Principal
 
 
