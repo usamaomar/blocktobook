@@ -20,6 +20,8 @@ import com.mongodb.client.model.Accumulators
 import com.mongodb.client.model.Aggregates
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Updates
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import org.bson.conversions.Bson
 import org.bson.types.ObjectId
 import org.litote.kmongo.and
@@ -315,95 +317,90 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
         filterByAirLineIds: List<String>?,
     ): PagingApiResponse<List<ResponseAirlineTicketModel>?> {
         val skip = (pageNumber - 1) * pageSize
-        val queryForSearchFilter = mutableListOf<Bson>()
-        val queryForItemFilter = mutableListOf<Bson>()
-        if (searchText.isNotEmpty()) {
-            queryForSearchFilter.add(
-                HotelModel::profiles.elemMatch(
-                    HotelProfileModel::name regex searchText
+
+        // Build the main query filter
+        val queryFilters = mutableListOf<Bson>().apply {
+            add(Filters.eq("userId", userId)) // Filter by user ID
+
+            // Search filter
+            if (searchText.isNotEmpty()) {
+                val foundHotelId = airLinesTickets
+                    .findOne(HotelModel::profiles.elemMatch(HotelProfileModel::name regex searchText))
+                    ?.id?.toHexString()
+                if (foundHotelId != null) add(Filters.eq("hotelId", foundHotelId))
+            }
+
+            // Price Range Filter
+            filterByPriceRangeFrom?.let { add(Filters.gte("price", it)) }
+            filterByPriceRangeTo?.let { add(Filters.lte("price", it)) }
+
+            // Airline IDs Filter
+            filterByAirLineIds?.takeIf { it.isNotEmpty() }?.let {
+                add(Filters.`in`("airLineIds", it))
+            }
+
+            // Date Range Filter
+            when {
+                filterByDateFrom != null && filterByDateTo != null -> add(
+                    Filters.and(
+                        Filters.gte("reservationDate", filterByDateFrom),
+                        Filters.lte("checkOutDate", filterByDateTo)
+                    )
                 )
-            )
-            val finalQueryForSearchFilter = and(queryForSearchFilter)
-            val foundHotel = airLinesTickets.findOne(finalQueryForSearchFilter)
-            queryForItemFilter.add(
-                Filters.eq("hotelId", foundHotel?.id?.toHexString())
-            )
+                filterByDateFrom != null -> add(Filters.gte("reservationDate", filterByDateFrom))
+                filterByDateTo != null -> add(Filters.lte("checkOutDate", filterByDateTo))
+            }
         }
 
-        queryForItemFilter.add(
-            Filters.eq("userId", userId)
-        )
-
-        if (filterByPriceRangeFrom != null && filterByPriceRangeTo != null) {
-            queryForItemFilter.add(
-                and(
-                    Filters.gte("price", filterByPriceRangeFrom),
-                    Filters.lte("price", filterByPriceRangeTo)
-                )
-            )
-        } else if (filterByPriceRangeFrom != null) {
-            queryForItemFilter.add(
-                Filters.gte("price", filterByPriceRangeFrom)
-            )
-        } else if (filterByPriceRangeTo != null) {
-            queryForItemFilter.add(
-                Filters.lte("price", filterByPriceRangeTo)
-            )
-        }
-
-        if (!filterByAirLineIds.isNullOrEmpty()) {
-            queryForItemFilter.add(
-                Filters.`in`("airLineIds", filterByAirLineIds)
-            )
-        }
-
-        if (filterByDateFrom != null && filterByDateTo != null) {
-            queryForItemFilter.add(
-                and(
-                    Filters.gte("reservationDate", filterByDateFrom),
-                    Filters.lte("checkOutDate", filterByDateTo)
-                )
-            )
-        } else if (filterByDateFrom != null) {
-            queryForItemFilter.add(
-                Filters.gte("reservationDate", filterByDateFrom)
-            )
-        } else if (filterByDateTo != null) {
-            queryForItemFilter.add(
-                Filters.lte("checkOutDate", filterByDateTo)
-            )
-        }
-
-
-
-        val queryForPurchasedModels = mutableListOf<Bson>()
-        queryForPurchasedModels.add(Filters.eq("airLineModel.userId", userId))
-
-
-
-        val finalQuery = and(queryForItemFilter)
+        // Prepare the query and pagination
+        val finalQuery = and(queryFilters)
         val totalCount = airLinesTickets.countDocuments(finalQuery).toInt()
-        val totalPages =
-            if (totalCount % (if (pageSize == 0) 1 else pageSize) == 0) totalCount / (if (pageSize == 0) 1 else pageSize) else (totalCount / (if (pageSize == 0) 1 else pageSize)) + 1
+        val totalPages = if (pageSize == 0) 1 else (totalCount + pageSize - 1) / pageSize
         val hasPreviousPage = pageNumber > 1
         val hasNextPage = pageNumber < totalPages
+
+        // Fetch tickets with pagination
+        val tickets = airLinesTickets.find(finalQuery)
+            .skip(skip)
+            .limit(pageSize)
+            .toList()
+
+        // Batch fetch related data
+        val cityIds = tickets.mapNotNull { it.departureCityId } + tickets.mapNotNull { it.arrivalCityId }
+        val airportIds = tickets.mapNotNull { it.departureAirportId } + tickets.mapNotNull { it.arrivalAirportId }
+        val airlineIds = tickets.mapNotNull { it.airLineId }
+
+        // Fetch related data in parallel
+        val (cities, airports, airlines) = coroutineScope {
+            val cityDeferred = async { citiesdatabase.find(Filters.`in`("_id", cityIds.map(::ObjectId))).toList() }
+            val airportDeferred = async { airPortsdatabase.find(Filters.`in`("_id", airportIds.map(::ObjectId))).toList() }
+            val airlineDeferred = async { airLinesdatabase.find(Filters.`in`("_id", airlineIds.map(::ObjectId))).toList() }
+            Triple(cityDeferred.await(), airportDeferred.await(), airlineDeferred.await())
+        }
+
+        // Map tickets to response models
+        val data = tickets.map { ticket ->
+            val departureCity = cities.find { it.id?.toHexString() == ticket.departureCityId }
+            val arrivalCity = cities.find { it.id?.toHexString() == ticket.arrivalCityId }
+            val departureAirport = airports.find { it.id?.toHexString() == ticket.departureAirportId }
+            val arrivalAirport = airports.find { it.id?.toHexString() == ticket.arrivalAirportId }
+            val airline = airlines.find { it.id?.toHexString() == ticket.airLineId }
+
+            ticket.toResponseAirlineTicketModel(
+                ticket.id?.toHexString() ?: "",
+                departureCity?.toResponseCityModel(xAppLanguageId, ""),
+                arrivalCity?.toResponseCityModel(xAppLanguageId, ""),
+                departureAirport?.toResponseAirPortModel(),
+                arrivalAirport?.toResponseAirPortModel(),
+                airline?.toResponseAirLineModel(),
+                airline?.toResponseAirLineModel(),
+                getTotalNumberOfRoomsForUser(userId, ticket.id?.toHexString(), ticket.numberOfSeats ?: 0)
+            )
+        }
+
         return PagingApiResponse(
             succeeded = true,
-            data = airLinesTickets.find(finalQuery)
-                .skip(skip)
-                .limit(pageSize)
-                .toList().map { hotelTicketModel ->
-                    hotelTicketModel.toResponseAirlineTicketModel(
-                        hotelTicketModel.id?.toHexString() ?: "",
-                        departureCity = citiesdatabase.findOne(Filters.eq("_id", ObjectId(hotelTicketModel.departureCityId)))?.toResponseCityModel(xAppLanguageId,   "") ,
-                        arrivalCity = citiesdatabase.findOne(Filters.eq("_id", ObjectId(hotelTicketModel.arrivalCityId)))?.toResponseCityModel(xAppLanguageId,   ""),
-                        departureAirport = airPortsdatabase.findOne(Filters.eq("_id", ObjectId(hotelTicketModel.departureAirportId)))?.toResponseAirPortModel(),
-                        arrivalAirport = airPortsdatabase.findOne(Filters.eq("_id", ObjectId(hotelTicketModel.arrivalAirportId)))?.toResponseAirPortModel(),
-                        airLine = airLinesdatabase.findOne(Filters.eq("_id", ObjectId(hotelTicketModel.airLineId)))?.toResponseAirLineModel(),
-                        returnAirLine = airLinesdatabase.findOne(Filters.eq("_id", ObjectId(hotelTicketModel.airLineId)))?.toResponseAirLineModel(),
-                        numberOfSeatsLeft = getTotalNumberOfRoomsForUser(userId ,hotelTicketModel.id?.toHexString(), hotelTicketModel.numberOfSeats?:0)
-                    )
-                },
+            data = data,
             currentPage = pageNumber,
             totalPages = totalPages,
             totalCount = totalCount,
@@ -412,6 +409,7 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
             errorCode = errorCode
         )
     }
+
 
     suspend fun getTotalNumberOfRoomsForUser(userId: String?,id: String?, totalRooms: Int): Int {
         // Create a query filter to find all documents with the matching userId under airLineModel
