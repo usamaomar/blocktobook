@@ -1,6 +1,7 @@
 package com.example.data.repository.searchDataSource
 
 import com.example.domain.model.airlinesModel.AirLineModel
+import com.example.domain.model.airlinesModel.ResponseAirLineModel
 import com.example.domain.model.airlinesModel.toResponseAirLineModel
 import com.example.domain.model.airlinesTicketModel.AirlineTicketModel
 import com.example.domain.model.airlinesTicketModel.ResponseAirlineTicketModel
@@ -480,30 +481,10 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
                             ObjectId(hotelTicketModel.arrivalCityId)
                         )
                     )?.toResponseCityModel(xAppLanguageId, ""),
-                    departureAirport = airPortsdatabase.findOne(
-                        eq(
-                            "_id",
-                            ObjectId(hotelTicketModel.departureAirportId)
-                        )
-                    )?.toResponseAirPortModel(),
-                    arrivalAirport = airPortsdatabase.findOne(
-                        eq(
-                            "_id",
-                            ObjectId(hotelTicketModel.arrivalAirportId)
-                        )
-                    )?.toResponseAirPortModel(),
-                    airLine = airLinesdatabase.findOne(
-                        eq(
-                            "_id",
-                            ObjectId(hotelTicketModel.airLineId)
-                        )
-                    )?.toResponseAirLineModel(),
-                    returnAirLine = airLinesdatabase.findOne(
-                        eq(
-                            "_id",
-                            ObjectId(hotelTicketModel.airLineId)
-                        )
-                    )?.toResponseAirLineModel(),
+                    departureAirport = null,
+                    arrivalAirport =  null,
+                    airLine = null,
+                    returnAirLine = null
                 )
             },
             errorCode = null
