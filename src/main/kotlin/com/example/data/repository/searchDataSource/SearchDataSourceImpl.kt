@@ -106,11 +106,11 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
 
         // Filter by number of adults, children, and rooms if not null
         if (filterByAdultsTicketNumber != null) {
-            queryForItemFilter.add(eq("numberOfAdultsAllowance", filterByAdultsTicketNumber))
+            queryForItemFilter.add(gte("numberOfAdultsAllowance", filterByAdultsTicketNumber))
         }
-        if (filterByChildrenTicketNumber != null) {
-            queryForItemFilter.add(eq("numberOfChildrenAllowance", filterByChildrenTicketNumber))
-        }
+//        if (filterByChildrenTicketNumber != null) {
+//            queryForItemFilter.add(eq("numberOfChildrenAllowance", filterByChildrenTicketNumber))
+//        }
 
         if (filterByRoomsTicketNumber != null) {
             queryForItemFilter.add(gte("numberOfRoomsPerNight", filterByRoomsTicketNumber))
@@ -530,11 +530,11 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
 
         // Filter by number of adults, children, and rooms if not null
         if (filterByAdultsTicketNumber != null) {
-            queryForItemFilter.add(eq("numberOfAdultsAllowance", filterByAdultsTicketNumber))
+            queryForItemFilter.add(gte("numberOfAdultsAllowance", filterByAdultsTicketNumber))
         }
-        if (filterByChildrenTicketNumber != null) {
-            queryForItemFilter.add(eq("numberOfChildrenAllowance", filterByChildrenTicketNumber))
-        }
+//        if (filterByChildrenTicketNumber != null) {
+//            queryForItemFilter.add(gte("numberOfChildrenAllowance", filterByChildrenTicketNumber))
+//        }
         if (filterByRoomsTicketNumber != null) {
             queryForItemFilter.add(gte("numberOfRoomsPerNight", filterByRoomsTicketNumber))
         }
