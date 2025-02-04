@@ -89,6 +89,66 @@ class SendGridDataSourceImpl(database: CoroutineDatabase) : SendGridDataSource {
         }
     }
 
+    override suspend fun sendTestSendGrid(
+        fromEmail: String,
+        toEmail: String,
+        text: String,
+    ): ApiResponse<String?> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val sendGrid = SendGrid(sendgridToken)
+                // Iterate through each admin user and send an email
+                    val email = Mail().apply {
+                        from =
+                            Email(fromEmail) // Replace with your sender email
+                        subject = "Important Notification"
+                        addContent(
+                            Content(
+                                "text/plain",
+                                "$text"
+                            )
+                        ) // Plain text email body
+                        addPersonalization(
+                            Personalization().apply {
+                                addTo(Email(toEmail))
+                            }
+                        )
+                    }
+                    // Prepare the request for each email
+                    val request = Request().apply {
+                        method = Method.POST
+                        endpoint = "mail/send"
+                        body = email.build()
+                    }
+                    // Execute the request
+                    val response = sendGrid.api(request)
+                    // If sending fails for any admin, return failure response
+                    if (response.statusCode != 202) {
+                        return@withContext ApiResponse(
+                            data = null,
+                            succeeded = false,
+                            message = arrayListOf("Failed to send email to ${toEmail}, status code: ${response.statusCode}${response.body}"),
+                            errorCode = errorCode
+                        )
+                    }
+                ApiResponse(
+                    data = null,
+                    succeeded = false,
+                    message = arrayListOf("Exception occurred:"),
+                    errorCode = errorCode
+                )
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+                ApiResponse(
+                    data = null,
+                    succeeded = false,
+                    message = arrayListOf("Exception occurred: ${ex.message}"),
+                    errorCode = errorCode
+                )
+            }
+        }
+    }
+
 
     override suspend fun sendEmailToAllAdminsUsingSendGrid(
         merchantId: String,

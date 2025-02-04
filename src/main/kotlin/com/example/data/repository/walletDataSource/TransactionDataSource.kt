@@ -14,6 +14,15 @@ interface TransactionDataSource {
         transactionType: Int,
     ): ApiResponse<String?>?
 
+    suspend fun topDownWallet(
+        userId: String,
+        amount: Double,
+        blockToBookFees: Double,
+        chargerId: String,
+        topUpType: Int,
+        transactionType: Int,
+    ): ApiResponse<String?>?
+
     suspend fun getWalletAmountByUserId(
         userId: String
     ): ApiResponse<String?>?

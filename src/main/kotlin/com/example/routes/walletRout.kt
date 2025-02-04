@@ -66,16 +66,76 @@ fun Route.walletRoute() {
                         data = null, errorCode = errorCode), status = HttpStatusCode.ExpectationFailed)
                 return@post
             }
-
-
-
-            val blockToBookFees = user.companyInfo.blockToBookFees ?: 10.0
+            val blockToBookFees = user.companyInfo.blockToBookFees
             val pagingApiResponse = transactionDataSource.topUpWallet(
                 userId = request.userId ?: "",
                 amount = request.topUpAmount ?: 0.0,
                 chargerId =chargerId ,
                 blockToBookFees = blockToBookFees,
                 transactionType = TransactionType.PLUS.ordinal,
+                topUpType = TopUpType.CART.ordinal
+            )
+            call.respond(
+                message = pagingApiResponse ?: ApiResponse(
+                    succeeded = false,
+                    message = arrayListOf("Something went wrong"),
+                    data = null, errorCode = errorCode
+                )
+            )
+        } catch (e: Exception) {
+            call.respond(
+                message = ApiResponse(
+                    succeeded = false,
+                    message = arrayListOf(e.message.toString(),e.cause?.message.toString()),
+                    data = null, errorCode = errorCode
+                ), status = HttpStatusCode.ExpectationFailed
+            )
+        }
+    }
+
+
+    post(Api.Wallet.TopDownAdminCart.path) {
+        try {
+            val request = call.receiveModel<CreateTransaction>()
+            val authorization = call.request.headers["Authorization"]
+            val decodedPayload = decodeJwtPayload(authorization ?: "")
+            val chargerId = decodedPayload["userId"] ?: ""
+            val user = userDataSource.getUserInfo(request.userId ?: "")
+
+
+            if(user?.companyInfo == null){
+                call.respond(
+                    message = ApiResponse(
+                        succeeded = false,
+                        message = arrayListOf("companyInfo is is not added"),
+                        data = null, errorCode = errorCode), status = HttpStatusCode.ExpectationFailed)
+                return@post
+            }
+
+            if(!user.companyInfo.isCompanyInfoVerified){
+                call.respond(
+                    message = ApiResponse(
+                        succeeded = false,
+                        message = arrayListOf("companyInfo is is not Verified"),
+                        data = null, errorCode = errorCode), status = HttpStatusCode.ExpectationFailed)
+                return@post
+            }
+
+            if(user.subscription == null){
+                call.respond(
+                    message = ApiResponse(
+                        succeeded = false,
+                        message = arrayListOf("subscription is not added"),
+                        data = null, errorCode = errorCode), status = HttpStatusCode.ExpectationFailed)
+                return@post
+            }
+            val blockToBookFees = user.companyInfo.blockToBookFees
+            val pagingApiResponse = transactionDataSource.topDownWallet(
+                userId = request.userId ?: "",
+                amount = request.topUpAmount ?: 0.0,
+                chargerId =chargerId ,
+                blockToBookFees = blockToBookFees,
+                transactionType = TransactionType.MINUS.ordinal,
                 topUpType = TopUpType.CART.ordinal
             )
             call.respond(

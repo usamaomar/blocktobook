@@ -62,6 +62,48 @@ class TransactionDataSourceImpl(database: CoroutineDatabase) : TransactionDataSo
         }
     }
 
+
+    override suspend fun topDownWallet(
+        userId: String,
+        amount: Double,
+        blockToBookFees: Double,
+        chargerId: String,
+        topUpType: Int,
+        transactionType: Int,
+    ): ApiResponse<String?> {
+        val walletAmounts = walletAmount.findOne(filter = WalletAmountModel::userId eq userId)
+        if (walletAmounts == null) {
+            return ApiResponse(data = "No Charge can be added on not created Wallet", succeeded = false, errorCode = errorCode)
+        } else {
+            val filter = WalletAmountModel::userId eq userId
+            val update = Updates.combine(
+                Updates.set(
+                    "amount", walletAmounts.amount - (amount)
+                )
+            )
+            walletAmount.updateOne(
+                filter,update
+            )
+        }
+        val insertResult = transactions.insertOne(
+            document = TransactionModel(
+                userId = userId,
+                amount = amount,
+                blockToBookFees = blockToBookFees,
+                chargerId = chargerId,
+                topUpType = topUpType,
+                transactionType = transactionType,
+                createdDate = System.currentTimeMillis()
+            )
+        )
+        val insertedId = insertResult.insertedId?.asObjectId()?.value?.toString()
+        if (insertedId != null) {
+            return ApiResponse(data = "Success", succeeded = true, errorCode = errorCode)
+        } else {
+            return ApiResponse(data = "Fail", succeeded = false, errorCode = errorCode)
+        }
+    }
+
     override suspend fun getWalletAmountByUserId(
         userId: String
     ): ApiResponse<String?> {

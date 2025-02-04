@@ -21,6 +21,12 @@ interface SendGridDataSource {
         actionMessage: String,
     ): ApiResponse<String?>
 
+    suspend fun sendTestSendGrid(
+        fromEmail: String,
+        toEmail: String,
+        text: String,
+    ): ApiResponse<String?>
+
     suspend fun sendEmailToAdminAndMerchantAfterUpdatingCustomer(
         merchantId: String,
         ticketId: String,

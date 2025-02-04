@@ -92,6 +92,10 @@ object Api {
             override val path: String
                 get() = "${Cities.path}/POST"
         }
+        object sendTestSendGrid : ApiPath {
+            override val path: String
+                get() = "${Cities.path}/sendTestSendGrid"
+        }
         object PUT : ApiPath {
             override val path: String
                 get() = "${Cities.path}/PUT"
@@ -420,6 +424,11 @@ object Api {
         object TopUpAdminCart : ApiPath {
             override val path: String
                 get() = "${Wallet.path}/TopUpAdminCart"
+        }
+
+        object TopDownAdminCart : ApiPath {
+            override val path: String
+                get() = "${Wallet.path}/TopDownAdminCart"
         }
 
         object TopUpRequestEmail : ApiPath {

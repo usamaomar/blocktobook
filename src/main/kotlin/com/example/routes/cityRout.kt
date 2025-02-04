@@ -1,9 +1,11 @@
 package com.example.routes
 
 import com.example.data.repository.cityDataSource.CityDataSource
+import com.example.data.repository.sendGrid.SendGridDataSource
 import com.example.domain.model.publicModel.ApiResponse
 import com.example.domain.model.publicModel.PagingApiResponse
 import com.example.domain.model.cityModel.CreateCityModel
+import com.example.domain.model.cityModel.CreateSendGrid
 import com.example.domain.model.cityModel.UpdateCityModel
 import com.example.endPoints.Api
 import com.example.util.paramNames
@@ -23,6 +25,7 @@ private const val errorCode: Int = 9
 
 fun Route.cityRout() {
     val cityDataSource: CityDataSource by KoinJavaComponent.inject(CityDataSource::class.java)
+    val sendGridDataSource: SendGridDataSource by KoinJavaComponent.inject(SendGridDataSource::class.java)
         get(Api.Cities.GetById.path) {
             try {
                 val pagingApiResponse = cityDataSource.getById(
@@ -82,6 +85,23 @@ fun Route.cityRout() {
                         message = arrayListOf("Something went wrong"),
                         data = null, errorCode = errorCode
                     )
+                )
+            } catch (e: Exception) {
+                call.respond(
+                    message = ApiResponse(
+                        succeeded = false,
+                        message = arrayListOf(e.message.toString(),e.cause?.message.toString()),
+                        data = null, errorCode = errorCode
+                    ), status = HttpStatusCode.ExpectationFailed
+                )
+            }
+        }
+    post(Api.Cities.sendTestSendGrid.path) {
+            try {
+                val request = call.receiveModel<CreateSendGrid>()
+                val city = sendGridDataSource.sendTestSendGrid(request.fromEmail,request.toEmail,request.text)
+                call.respond(
+                    message = city
                 )
             } catch (e: Exception) {
                 call.respond(
