@@ -38,7 +38,7 @@ class SendGridDataSourceImpl(database: CoroutineDatabase) : SendGridDataSource {
         return withContext(Dispatchers.IO) {
             try {
                 // Create a SendGrid instance
-                val user = users.findOne(filter = User::id eq "JXcGq1dAfjao3cZAqZUCcZ2Mnms1")
+                val user = users.findOne(filter = User::id eq userId)
                 val sendGrid = SendGrid(searchDataSource.getSendGridKey())
                 val email = Mail().apply {
                     from = Email(user?.emailAddress)
