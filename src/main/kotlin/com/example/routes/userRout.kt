@@ -75,9 +75,11 @@ fun Route.userRoute() {
     }
     get(Api.User.GetAll.path) {
         try {
+            val xurrenttime: Long = System.currentTimeMillis()
             val pagingApiResponse = userDataSource.getAll(
                 searchText = call.parameters[paramNames.SearchText] ?: "",
                 pageSize = call.parameters[paramNames.PageSize]?.toInt() ?: 0,
+                xurrenttime = xurrenttime,
                 pageNumber = call.parameters[paramNames.PageNumber]?.toInt() ?: 0,
                 xAppLanguageId = call.request.headers[paramNames.languageId]?.toInt()
                     ?: 1,
