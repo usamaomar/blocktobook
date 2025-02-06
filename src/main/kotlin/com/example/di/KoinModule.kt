@@ -30,6 +30,8 @@ import com.example.data.repository.searchDataSource.SearchDataSource
 import com.example.data.repository.searchDataSource.SearchDataSourceImpl
 import com.example.data.repository.sendGrid.SendGridDataSource
 import com.example.data.repository.sendGrid.SendGridDataSourceImpl
+import com.example.data.repository.sendGridKey.SendGridKeyDataSource
+import com.example.data.repository.sendGridKey.SendGridKeySourceImpl
 import com.example.data.repository.userDataSource.UploadDataSource
 import com.example.data.repository.userDataSource.UploadDataSourceImpl
 import com.example.data.repository.userDataSource.UserDataSourceImpl
@@ -38,9 +40,12 @@ import com.example.data.repository.walletDataSource.TransactionDataSource
 import com.example.data.repository.walletDataSource.TransactionDataSourceImpl
 import com.example.util.Constants.DATABASE_NAME
 import com.example.util.Constants.DATABASE_TEST
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.koin.dsl.module
 import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.reactivestreams.KMongo
+import java.io.InputStream
 
 val koinModule = module {
     single {
@@ -104,5 +109,14 @@ val koinModule = module {
     single<AdminWalletDataSource> {
         AdminWalletDataSourceImpl(get())
     }
+    single<SendGridKeyDataSource> {
+        SendGridKeySourceImpl()
+    }
+//    single {
+//        val serviceAccount = object {}::class.java.classLoader.getResourceAsStream("ktor-sendgrid.json") ?: throw IllegalStateException("ktor-sendgrid.json not found!")
+//        val mapper = jacksonObjectMapper()
+//        val config: JsonNode = mapper.readTree(serviceAccount)
+//        config["send_gr_key"].asText()
+//    }
 
 }

@@ -1,10 +1,10 @@
 package com.example.data.repository.sendGrid
 
+import com.example.data.repository.sendGridKey.SendGridKeyDataSource
 import com.example.domain.model.publicModel.ApiResponse
 import com.example.domain.model.purchaseModel.PurchaseModel
 import com.example.domain.model.userModel.User
 import com.example.util.AccessRole
-import com.example.util.Constants.sendgridToken
 import com.sendgrid.Method
 import com.sendgrid.Request
 import com.sendgrid.SendGrid
@@ -15,12 +15,15 @@ import com.sendgrid.helpers.mail.objects.Personalization
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.bson.types.ObjectId
+import org.koin.java.KoinJavaComponent
 import org.litote.kmongo.coroutine.CoroutineDatabase
 import org.litote.kmongo.eq
 import java.io.IOException
 
 class SendGridDataSourceImpl(database: CoroutineDatabase) : SendGridDataSource {
     private val errorCode: Int = 12444
+
+    val searchDataSource: SendGridKeyDataSource by KoinJavaComponent.inject(SendGridKeyDataSource::class.java)
 
 
     private val users = database.getCollection<User>()
@@ -31,11 +34,12 @@ class SendGridDataSourceImpl(database: CoroutineDatabase) : SendGridDataSource {
         userId: String,
         amount: String,
     ): ApiResponse<String?> {
+
         return withContext(Dispatchers.IO) {
             try {
                 // Create a SendGrid instance
                 val user = users.findOne(filter = User::id eq "JXcGq1dAfjao3cZAqZUCcZ2Mnms1")
-                val sendGrid = SendGrid(sendgridToken)
+                val sendGrid = SendGrid(searchDataSource.getSendGridKey())
                 val email = Mail().apply {
                     from = Email(user?.emailAddress)
                     subject = "Recharge wallet"
@@ -96,7 +100,7 @@ class SendGridDataSourceImpl(database: CoroutineDatabase) : SendGridDataSource {
     ): ApiResponse<String?> {
         return withContext(Dispatchers.IO) {
             try {
-                val sendGrid = SendGrid(sendgridToken)
+                val sendGrid = SendGrid(searchDataSource.getSendGridKey())
                 // Iterate through each admin user and send an email
                     val email = Mail().apply {
                         from =
@@ -169,7 +173,7 @@ class SendGridDataSourceImpl(database: CoroutineDatabase) : SendGridDataSource {
                     )
                 }
 
-                val sendGrid = SendGrid(sendgridToken)
+                val sendGrid = SendGrid(searchDataSource.getSendGridKey())
 
                 // Iterate through each admin user and send an email
                 adminUsers.forEach { admin ->
@@ -240,10 +244,7 @@ class SendGridDataSourceImpl(database: CoroutineDatabase) : SendGridDataSource {
                 // Fetch the merchant and all admin users
                 val merchant = users.findOne(filter = User::id eq merchantId)
                 val admin = users.findOne(filter = User::id eq adminId)
-
-
-                val sendGrid = SendGrid(sendgridToken)
-
+                val sendGrid = SendGrid(searchDataSource.getSendGridKey())
                 // Iterate through each admin user and send an email
                 val email = Mail().apply {
                     from = Email(admin?.emailAddress) // Replace with your sender email
@@ -336,7 +337,7 @@ class SendGridDataSourceImpl(database: CoroutineDatabase) : SendGridDataSource {
             }
 
             // Send email notifications using SendGrid
-            val sendGrid = SendGrid(sendgridToken)
+            val sendGrid = SendGrid(searchDataSource.getSendGridKey())
 
             // Function to send an email
             suspend fun sendEmail(to: String, subject: String, content: String): Boolean {
