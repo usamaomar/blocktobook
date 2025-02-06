@@ -72,7 +72,7 @@ class UserDataSourceImpl(database: CoroutineDatabase) : UserDataSource {
 //                User::companyInfo / CompanyInfoModel::name text searchText,
 //                User::companyInfo / CompanyInfoModel::facilityNumber text searchText
 //            ),
-            User::accessRole eq AccessRole.Merchant // Filter by access role
+//            User::accessRole eq AccessRole.Merchant // Filter by access role
         )
 
         // Optimize counting if exact count isn't required
@@ -85,9 +85,9 @@ class UserDataSourceImpl(database: CoroutineDatabase) : UserDataSource {
 
         // Perform the query efficiently
         val userList = users.find(query)
-            .sort(ascending(User::name)) // Sorting for better cursor-based pagination
+//            .sort(ascending(User::name)) // Sorting for better cursor-based pagination
 //            .skip(skip)
-            .limit(pageSize)
+//            .limit(pageSize)
             .toList()
 
         return PagingApiResponse(
