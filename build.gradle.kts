@@ -10,9 +10,6 @@ plugins {
     kotlin("jvm") version "2.0.0"
     id("io.ktor.plugin") version "2.3.12"
     id("org.jetbrains.kotlin.plugin.serialization") version "1.6.10"
-//    id ("org.jetbrains.kotlin.plugin.serialization") version "1.6.10"
-
-//    id("com.google.gms.google-services")
 }
 
 group = "com.example"
@@ -21,12 +18,12 @@ version = "0.0.1"
 application {
     mainClass.set("io.ktor.server.netty.EngineMain")
     val isDevelopment: Boolean = project.ext.has("development")
-    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
+    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment","-Xms512m",       // Minimum heap size
+        "-Xmx1024m",      // Maximum heap size
+        "-XX:+UseG1GC",   // Use G1 garbage collector
+        "-XX:MaxGCPauseMillis=50" )
 }
 
-//tasks.create("stage"){
-//    dependsOn("installDist")
-//}
 tasks{
     create("stage").dependsOn("installDist")
 }
@@ -72,18 +69,11 @@ dependencies {
     //firebase auth
     implementation("com.google.firebase:firebase-admin:9.0.0")
 
-//    implementation("com.google.firebase:firebase-auth:22.0.0")
-
-    // Google Play services
-//    implementation("com.google.android.gms:play-services-auth:20.5.0")
-
     implementation("io.ktor:ktor-server-core:2.3.4")
     implementation("io.ktor:ktor-server-netty:2.3.4")
     implementation("io.ktor:ktor-server-status-pages:2.3.4")
     implementation("ch.qos.logback:logback-classic:1.2.10")
 
-//    implementation("io.ktor:ktor-server-auth:2.3.4")
-//    implementation("io.ktor:ktor-server-auth-jwt:2.3.4")
     implementation("com.google.auth:google-auth-library-oauth2-http:1.7.0") // Explicit version, if needed
     implementation("com.auth0:java-jwt:4.2.0")
     ///
@@ -107,12 +97,6 @@ dependencies {
     implementation("com.sendgrid:sendgrid-java:4.9.3") // or the latest version
 
     implementation("io.ktor:ktor-server-cio:$ktorVersion")
-
-
-
-    // Google API Client Library
-//    implementation("com.google.api-client:google-api-client:2.0.0")
-
 
 
 }
