@@ -10,6 +10,7 @@ import org.litote.kmongo.eq
 import com.mongodb.client.model.Updates.set
 import org.litote.kmongo.and
 import org.litote.kmongo.ascending
+import org.litote.kmongo.descending
 
 class UserDataSourceImpl(database: CoroutineDatabase) : UserDataSource {
 
@@ -63,38 +64,25 @@ class UserDataSourceImpl(database: CoroutineDatabase) : UserDataSource {
         xurren: Long,
         xAppLanguageId: Int
     ): PagingApiResponse<List<User>?> {
-//        val skip = (pageNumber - 1) * pageSize
-        val xurrenttime = System.currentTimeMillis()
-        // Build query with a compound filter for better search performance
+        val currentTime = System.currentTimeMillis()
+
         val query = and(
-//            or(
-//                User::name text searchText,  // Use text search for better indexing
-//                User::emailAddress text searchText,
-//                User::companyInfo / CompanyInfoModel::name text searchText,
-//                User::companyInfo / CompanyInfoModel::facilityNumber text searchText
-//            ),
-//            User::accessRole eq AccessRole.Merchant // Filter by access role
+            // Assume tagValue and letterIdValue come from your parameters or logic
+            User::id eq "tagValue",
+            User::name eq "letterIdValue"
         )
 
-        // Optimize counting if exact count isn't required
-//        val totalCount = users.estimatedDocumentCount(query).toInt()
-
-        // Compute pagination details
-//        val totalPages = if (pageSize == 0) 1 else (totalCount + pageSize - 1) / pageSize
-//        val hasPreviousPage = pageNumber > 1
-//        val hasNextPage = pageNumber < totalPages
-
-        // Perform the query efficiently
+        // Apply efficient query with sorting and limiting
         val userList = users.find(query)
-//            .sort(ascending(User::name)) // Sorting for better cursor-based pagination
-//            .skip(skip)
-//            .limit(pageSize)
+            .limit(1) // Fetch a single record as per your use case
             .toList()
-        val xurrenttcime = System.currentTimeMillis()
+
+        val queryExecutionTime = System.currentTimeMillis()
+
         return PagingApiResponse(
             succeeded = true,
             data = userList,
-            message = arrayListOf("From our $xurren","inside $xurrenttime"," goIn $xurrenttcime"),
+            message = arrayListOf("From our $xurren", "inside $currentTime", "goIn $queryExecutionTime"),
             currentPage = pageNumber,
             totalPages = 1,
             totalCount = 1,
