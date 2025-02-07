@@ -74,8 +74,7 @@ class UserDataSourceImpl(database: CoroutineDatabase) : UserDataSource {
 
         // Apply efficient query with sorting and limiting
         val userList = users.find()
-            .limit(1) // Fetch a single record as per your use case
-            .toList()
+             .toList()
 
         val queryExecutionTime = System.currentTimeMillis()
 
