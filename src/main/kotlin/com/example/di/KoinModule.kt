@@ -42,17 +42,38 @@ import com.example.util.Constants.DATABASE_NAME
 import com.example.util.Constants.DATABASE_TEST
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.mongodb.MongoClientSettings
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import org.bson.Document
 import org.koin.dsl.module
+import org.litote.kmongo.MongoOperator
 import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.reactivestreams.KMongo
 import java.io.InputStream
 
 val koinModule = module {
     single {
+
+        val settings = MongoClientSettings.builder()
+            .applyToConnectionPoolSettings { builder ->
+                builder.maxSize(20).minSize(5)
+            }.build()
+
 //         if (System.getenv("APP_ENV") == "test") {
 //            KMongo.createClient().coroutine.getDatabase(DATABASE_TEST) // Local test database
 //        } else {
-            KMongo.createClient(System.getenv("MONGODB_URI")).coroutine.getDatabase(DATABASE_NAME) // Production database
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val  database =  KMongo.createClient(System.getenv("MONGODB_URI")).coroutine.getDatabase(DATABASE_NAME) // Production database
+                val result: Document? = database.runCommand<Document>(Document("profile", 2))
+
+            } catch (e: Exception) {
+
+            }
+        }
 //        }
     }
     single<UserDataSource> {
