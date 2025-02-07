@@ -57,10 +57,10 @@ import java.io.InputStream
 val koinModule = module {
     single {
 
-        val settings = MongoClientSettings.builder()
-            .applyToConnectionPoolSettings { builder ->
-                builder.maxSize(20).minSize(5)
-            }.build()
+//        val settings = MongoClientSettings.builder()
+//            .applyToConnectionPoolSettings { builder ->
+//                builder.maxSize(20).minSize(5)
+//            }.build()
 
 //         if (System.getenv("APP_ENV") == "test") {
 //            KMongo.createClient().coroutine.getDatabase(DATABASE_TEST) // Local test database
