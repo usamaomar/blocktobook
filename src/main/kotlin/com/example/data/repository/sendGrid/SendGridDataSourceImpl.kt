@@ -34,45 +34,45 @@ class SendGridDataSourceImpl(database: CoroutineDatabase) : SendGridDataSource {
         userId: String,
         amount: String,
     ): ApiResponse<String?> {
-
         return withContext(Dispatchers.IO) {
             try {
-                // Create a SendGrid instance
                 val user = users.findOne(filter = User::id eq userId)
                 val sendGrid = SendGrid(searchDataSource.getSendGridKey())
+
+                // Fetch all admin users
+                val adminUsers = users.find(User::accessRole eq AccessRole.Admin).toList()
+
                 val email = Mail().apply {
                     from = Email(user?.emailAddress)
                     subject = "Recharge wallet"
                     templateId = "d-d8e377392fb0422a97335598a27e0ae8"
-                    // Recipient saucer
+
+                    // Add all admins to the email recipients
                     val personalization = Personalization().apply {
-                        addTo(Email("usamaomarsoftware@gmail.com"))
+                        adminUsers.forEach { adminUser ->
+                            addTo(Email(adminUser.emailAddress))
+                        }
                         addDynamicTemplateData("name", user?.name)
                         addDynamicTemplateData("amount", amount)
-
                     }
                     addPersonalization(personalization)
                 }
-                // Prepare the request
+
                 val request = Request().apply {
                     method = Method.POST
                     endpoint = "mail/send"
                     body = email.build()
                 }
 
-                // Execute the request
                 val response = sendGrid.api(request)
 
-                // Check the response status
                 return@withContext if (response.statusCode == 202) {
-                    // Success, return a success response
                     ApiResponse(
                         data = "Email sent successfully",
                         succeeded = true,
                         errorCode = null
                     )
                 } else {
-                    // Error, return a failure response with details
                     ApiResponse(
                         data = null,
                         succeeded = false,
@@ -82,7 +82,6 @@ class SendGridDataSourceImpl(database: CoroutineDatabase) : SendGridDataSource {
                 }
             } catch (ex: IOException) {
                 ex.printStackTrace()
-                // Return a failure response in case of exception
                 ApiResponse(
                     data = null,
                     succeeded = false,
@@ -92,6 +91,7 @@ class SendGridDataSourceImpl(database: CoroutineDatabase) : SendGridDataSource {
             }
         }
     }
+
 
     override suspend fun sendTestSendGrid(
         fromEmail: String,
