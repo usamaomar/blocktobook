@@ -11,7 +11,7 @@ fun Application.module() {
     configureKoin()
     firebaseInit()
     configureCORS()
-//    intercept()
+    intercept()
     configureSerialization()
     configureRouting()
     configureMonitoring()
