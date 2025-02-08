@@ -1,9 +1,12 @@
 package com.example.data.repository.userDataSource
 
+import com.example.domain.model.profileModel.CompanyInfoModel
 import com.example.domain.model.publicModel.PagingApiResponse
 import com.example.domain.model.userModel.UpdateUser
 import com.example.domain.model.userModel.User
 import com.example.util.AccessRole
+import com.mongodb.client.model.IndexOptions
+import com.mongodb.client.model.Indexes
 import com.mongodb.client.model.Updates.combine
 import org.litote.kmongo.coroutine.CoroutineDatabase
 import org.litote.kmongo.eq
@@ -11,6 +14,9 @@ import com.mongodb.client.model.Updates.set
 import org.litote.kmongo.and
 import org.litote.kmongo.ascending
 import org.litote.kmongo.descending
+import org.litote.kmongo.div
+import org.litote.kmongo.or
+import org.litote.kmongo.regex
 
 class UserDataSourceImpl(database: CoroutineDatabase) : UserDataSource {
 
@@ -64,17 +70,30 @@ class UserDataSourceImpl(database: CoroutineDatabase) : UserDataSource {
         xurren: Long,
         xAppLanguageId: Int
     ): PagingApiResponse<List<User>?> {
+        val skip = (pageNumber - 1) * pageSize
         val currentTime = System.currentTimeMillis()
 
-        val query = and(
-            // Assume tagValue and letterIdValue come from your parameters or logic
-            User::id eq "tagValue",
-            User::name eq "letterIdValue"
+       val query = or(
+            User::name regex searchText, // Search by user name (partial match)
+            User::emailAddress regex searchText, // Search by email (partial match)
+            User::companyInfo / CompanyInfoModel::name regex searchText, // Search by company name
+            User::companyInfo / CompanyInfoModel::facilityNumber regex searchText // Search by facility number
         )
-        val totalCount = users.estimatedDocumentCount().toInt()
 
-        // Apply efficient query with sorting and limiting
-        val userList = users.find().limit(30)
+        users.createIndex(
+            Indexes.compoundIndex(
+                Indexes.ascending("name", "emailAddress", "companyInfo.name", "companyInfo.facilityNumber")
+            ),
+            IndexOptions().background(true)
+        )
+
+        val totalCount = users.estimatedDocumentCount().toInt()
+        val totalPages =
+            if (totalCount % (if (pageSize == 0)  1 else pageSize) == 0) totalCount / (if (pageSize == 0)  1 else pageSize) else (totalCount / (if (pageSize == 0)  1 else pageSize)) + 1
+        val hasPreviousPage = pageNumber > 1
+        val hasNextPage = pageNumber < totalPages
+
+        val userList = users.find(query).limit(pageSize)
              .toList()
 
         val queryExecutionTime = System.currentTimeMillis()
@@ -84,10 +103,10 @@ class UserDataSourceImpl(database: CoroutineDatabase) : UserDataSource {
             data = userList,
             message = arrayListOf("From our $xurren", "inside $currentTime", "goIn $queryExecutionTime"),
             currentPage = pageNumber,
-            totalPages = totalCount,
-            totalCount = 1,
-            hasPreviousPage = false,
-            hasNextPage = false,
+            totalPages = totalPages,
+            totalCount = totalCount,
+            hasPreviousPage = hasPreviousPage,
+            hasNextPage = hasNextPage,
             errorCode = errorCode
         )
     }
