@@ -63,83 +63,45 @@ class UserDataSourceImpl(database: CoroutineDatabase) : UserDataSource {
         return users.findOne(filter = filter)!!
     }
 
-    override suspend fun getAll(
-        searchText: String,
-        pageSize: Int,
-        pageNumber: Int,
-        xurren: Long,
-        xAppLanguageId: Int
-    ): PagingApiResponse<List<User>?> {
-        val skip = (pageNumber - 1) * pageSize
-        val currentTime = System.currentTimeMillis()
-
-       val query = or(
-            User::name regex searchText, // Search by user name (partial match)
-            User::emailAddress regex searchText, // Search by email (partial match)
-            User::companyInfo / CompanyInfoModel::name regex searchText, // Search by company name
-            User::companyInfo / CompanyInfoModel::facilityNumber regex searchText // Search by facility number
-        )
-
-        users.createIndex(
-            Indexes.compoundIndex(
-                Indexes.ascending("name", "emailAddress", "companyInfo.name", "companyInfo.facilityNumber")
-            ),
-            IndexOptions().background(true)
-        )
-
-        val totalCount = users.estimatedDocumentCount().toInt()
-        val totalPages =
-            if (totalCount % (if (pageSize == 0)  1 else pageSize) == 0) totalCount / (if (pageSize == 0)  1 else pageSize) else (totalCount / (if (pageSize == 0)  1 else pageSize)) + 1
-        val hasPreviousPage = pageNumber > 1
-        val hasNextPage = pageNumber < totalPages
-
-        val userList = users.find(query).limit(pageSize)
-             .toList()
-
-        val queryExecutionTime = System.currentTimeMillis()
-
-        return PagingApiResponse(
-            succeeded = true,
-            data = userList,
-            message = arrayListOf("From our $xurren", "inside $currentTime", "goIn $queryExecutionTime"),
-            currentPage = pageNumber,
-            totalPages = totalPages,
-            totalCount = totalCount,
-            hasPreviousPage = hasPreviousPage,
-            hasNextPage = hasNextPage,
-            errorCode = errorCode
-        )
-    }
-
-
 //    override suspend fun getAll(
 //        searchText: String,
 //        pageSize: Int,
 //        pageNumber: Int,
+//        xurren: Long,
 //        xAppLanguageId: Int
 //    ): PagingApiResponse<List<User>?> {
 //        val skip = (pageNumber - 1) * pageSize
-//        val query = or(
+//        val currentTime = System.currentTimeMillis()
+//
+//       val query = or(
 //            User::name regex searchText, // Search by user name (partial match)
 //            User::emailAddress regex searchText, // Search by email (partial match)
 //            User::companyInfo / CompanyInfoModel::name regex searchText, // Search by company name
 //            User::companyInfo / CompanyInfoModel::facilityNumber regex searchText // Search by facility number
 //        )
-//        // Perform the query
 //
-//        val totalCount = users.countDocuments(query).toInt()
+//        users.createIndex(
+//            Indexes.compoundIndex(
+//                Indexes.ascending("name", "emailAddress", "companyInfo.name", "companyInfo.facilityNumber")
+//            ),
+//            IndexOptions().background(true)
+//        )
+//
+//        val totalCount = users.estimatedDocumentCount().toInt()
 //        val totalPages =
 //            if (totalCount % (if (pageSize == 0)  1 else pageSize) == 0) totalCount / (if (pageSize == 0)  1 else pageSize) else (totalCount / (if (pageSize == 0)  1 else pageSize)) + 1
 //        val hasPreviousPage = pageNumber > 1
 //        val hasNextPage = pageNumber < totalPages
+//
+//        val userList = users.find(query).limit(pageSize)
+//             .toList()
+//
+//        val queryExecutionTime = System.currentTimeMillis()
+//
 //        return PagingApiResponse(
 //            succeeded = true,
-//            data = users.find(query)
-//                .skip(skip)
-//                .limit(pageSize)
-//                .toList().filter {
-//                    it.accessRole == (AccessRole.Merchant)
-//                },
+//            data = userList,
+//            message = arrayListOf("From our $xurren", "inside $currentTime", "goIn $queryExecutionTime"),
 //            currentPage = pageNumber,
 //            totalPages = totalPages,
 //            totalCount = totalCount,
@@ -148,5 +110,44 @@ class UserDataSourceImpl(database: CoroutineDatabase) : UserDataSource {
 //            errorCode = errorCode
 //        )
 //    }
+
+
+    override suspend fun getAll(
+        searchText: String,
+        pageSize: Int,
+        pageNumber: Int,
+        xurren: Long,
+        xAppLanguageId: Int
+    ): PagingApiResponse<List<User>?> {
+        val skip = (pageNumber - 1) * pageSize
+        val query = or(
+            User::name regex searchText, // Search by user name (partial match)
+            User::emailAddress regex searchText, // Search by email (partial match)
+            User::companyInfo / CompanyInfoModel::name regex searchText, // Search by company name
+            User::companyInfo / CompanyInfoModel::facilityNumber regex searchText // Search by facility number
+        )
+        // Perform the query
+
+        val totalCount = users.countDocuments(query).toInt()
+        val totalPages =
+            if (totalCount % (if (pageSize == 0)  1 else pageSize) == 0) totalCount / (if (pageSize == 0)  1 else pageSize) else (totalCount / (if (pageSize == 0)  1 else pageSize)) + 1
+        val hasPreviousPage = pageNumber > 1
+        val hasNextPage = pageNumber < totalPages
+        return PagingApiResponse(
+            succeeded = true,
+            data = users.find(query)
+                .skip(skip)
+                .limit(pageSize)
+                .toList().filter {
+                    it.accessRole == (AccessRole.Merchant)
+                },
+            currentPage = pageNumber,
+            totalPages = totalPages,
+            totalCount = totalCount,
+            hasPreviousPage = hasPreviousPage,
+            hasNextPage = hasNextPage,
+            errorCode = errorCode
+        )
+    }
 
 }
