@@ -71,6 +71,7 @@ class UserDataSourceImpl(database: CoroutineDatabase) : UserDataSource {
             User::id eq "tagValue",
             User::name eq "letterIdValue"
         )
+        val totalCount = users.estimatedDocumentCount().toInt()
 
         // Apply efficient query with sorting and limiting
         val userList = users.find().limit(30)
@@ -83,7 +84,7 @@ class UserDataSourceImpl(database: CoroutineDatabase) : UserDataSource {
             data = userList,
             message = arrayListOf("From our $xurren", "inside $currentTime", "goIn $queryExecutionTime"),
             currentPage = pageNumber,
-            totalPages = 1,
+            totalPages = totalCount,
             totalCount = 1,
             hasPreviousPage = false,
             hasNextPage = false,
