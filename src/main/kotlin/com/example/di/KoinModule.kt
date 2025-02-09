@@ -49,9 +49,9 @@ val koinModule = module {
 
     single {
 //         if (System.getenv("APP_ENV") == "test") {
-            KMongo.createClient().coroutine.getDatabase(DATABASE_TEST) // Local test database
+//            KMongo.createClient().coroutine.getDatabase(DATABASE_TEST) // Local test database
 //        } else {
-//        KMongo.createClient(System.getenv("MONGODB_URI")).coroutine.getDatabase(DATABASE_NAME) // Production database
+        KMongo.createClient(System.getenv("MONGODB_URI")).coroutine.getDatabase(DATABASE_NAME) // Production database
 //        }
     }
 
