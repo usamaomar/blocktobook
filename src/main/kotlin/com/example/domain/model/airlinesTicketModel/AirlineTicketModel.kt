@@ -48,7 +48,8 @@ fun AirlineTicketModel.toResponseAirlineTicketModel(
     arrivalAirport: ResponseAirPortModel?,
     airLine: ResponseAirLineModel?,
     returnAirLine: ResponseAirLineModel?,
-    numberOfSeatsLeft: Int? = 0
+    numberOfSeatsLeft: Int? = 0,
+    numberOfReturnSeatsLeft: Int? = 0
 ): ResponseAirlineTicketModel {
     return ResponseAirlineTicketModel(
         id = _id,
@@ -76,5 +77,6 @@ fun AirlineTicketModel.toResponseAirlineTicketModel(
         flightNumber = this.flightNumber,
         pricePerInfant = this.pricePerInfant,
         pricePerInfantRoundTrip = this.pricePerInfantRoundTrip,
+        numberOfReturnSeatsLeft =     numberOfReturnSeatsLeft,
     )
 }

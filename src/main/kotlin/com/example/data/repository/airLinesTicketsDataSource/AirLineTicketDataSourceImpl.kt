@@ -394,7 +394,8 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
                 arrivalAirport?.toResponseAirPortModel(),
                 airline?.toResponseAirLineModel(),
                 airline?.toResponseAirLineModel(),
-                getTotalNumberOfRoomsForUser(userId, ticket.id?.toHexString(), ticket.numberOfSeats ?: 0)
+                getTotalNumberOfRoomsForUser(userId, ticket.id?.toHexString(), ticket.numberOfSeats ?: 0),
+                getTotalNumberOfRoomsForUser(userId, ticket.id?.toHexString(), ticket.numberOfSeats ?: 0),
             )
         }
 
@@ -426,14 +427,34 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
         // Sum the numberOfRooms field from all matching documents
         val totalPurchased  = documents.sumOf { it.numberOfRooms }
 
+        val totalTwo = getTotalNumberOfRetrunRoomsForUser(userId, id, totalRooms)
 
-        return totalRooms - totalPurchased
+        return  totalRooms - (totalTwo + totalPurchased)
+    }
+
+    suspend fun getTotalNumberOfRetrunRoomsForUser(userId: String?,id: String?, totalRooms: Int): Int {
+        // Create a query filter to find all documents with the matching userId under airLineModel
+        val queryForItemFilter = mutableListOf<Bson>()
+        queryForItemFilter.add(Filters.eq("returnAirLineModel.userId", userId))
+        queryForItemFilter.add(Filters.eq("returnAirLineModel.id", id))
+
+        // Combine all filters into one final query
+        val finalQuery = and(queryForItemFilter)
+
+        // Fetch the documents that match the query
+        val documents = purchaseModel.find(finalQuery).toList()
+
+        // Sum the numberOfRooms field from all matching documents
+        val totalPurchased  = documents.sumOf { it.numberOfRooms }
+
+
+        return totalPurchased
     }
 
 
 
 
-    public fun generateUniqueToken(length: Int = 24): String {
+      fun generateUniqueToken(length: Int = 24): String {
         val characters = "4039fkeoidfwm0ef90329mifwe2039"
         val secureRandom = SecureRandom()
         return (1..length).map { characters.random(secureRandom.asKotlinRandom()) }.joinToString("")

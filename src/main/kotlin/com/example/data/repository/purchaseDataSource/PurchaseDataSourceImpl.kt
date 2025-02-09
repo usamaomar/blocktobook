@@ -109,49 +109,57 @@ class PurchaseDataSourceImpl(database: CoroutineDatabase) : PurchaseDataSource {
                     )
                 }
             } else if (cartModel.returnAirLineTicketModel != null) {
-                val airlineTicketModel = purchaseModel.find(
-                    Filters.eq(
-                        "airLineModel.id",
-                        ObjectId(cartModel.airLineModel?.id)
-                    )
-                ).toList()
 
-                val totalSeatsAvailable =
-                    airlineTicketModel.sumOf { it.airLineModel?.numberOfSeats ?: 0 }
+                val airlineTicketModel = getAirlineModelListFromPurchase(cartModel.airLineModel?.id ?: "")
+
+                val totalSeatsAvailable = airlineTicketModel.sumOf { it.numberOfRooms ?: 0 }
+
+                val numberOfAllSeats = (cartModel.airLineModel?.numberOfSeats ?: 0)
+
+                val finalTotal = (  numberOfAllSeats- totalSeatsAvailable)
 
                 if (totalSeatsAvailable != 0) {
-                    if (cartModel.numberOfRooms > totalSeatsAvailable) {
+                    if (cartModel.numberOfRooms > finalTotal ) {
                         throw IllegalArgumentException("Error: Not enough seats available for the requested number.")
                     }
                 }
+                val returnAirlineTicketModel = getReturnAirlineModelListFromPurchase(cartModel.returnAirLineTicketModel.id ?: "")
+
+                val totalReturnSeatsAvailable = returnAirlineTicketModel.sumOf { it.numberOfRooms  ?: 0 }
 
 
-                val returnAirlineTicketModel = purchaseModel.find(
-                    Filters.eq(
-                        "airLineModel.returnAirLineModel.id",
-                        ObjectId(cartModel.returnAirLineTicketModel.id)
-                    )
-                ).toList()
-                val totalReturnSeatsAvailable =
-                    returnAirlineTicketModel.sumOf { it.returnAirLineModel?.numberOfSeats ?: 0 }
+                val returnNumberOfAllSeats = (cartModel.returnAirLineTicketModel.numberOfSeats ?: 0)
+                val returnFinalTotal = (  returnNumberOfAllSeats- totalReturnSeatsAvailable)
+
                 if (totalReturnSeatsAvailable != 0) {
-                    if (cartModel.numberOfRooms > totalReturnSeatsAvailable) {
+                    if (cartModel.numberOfRooms > returnFinalTotal) {
                         throw IllegalArgumentException("Error: Not enough seats available for the requested number.")
                     }
                 }
             } else if (cartModel.airLineModel != null) {
-                val airlineTicketModel = purchaseModel.find(
-                    Filters.eq(
-                        "airLineModel.id",
-                        ObjectId(cartModel.airLineModel.id)
-                    )
-                ).toList()
+                val airlineTicketModel = getAirlineModelListFromPurchase(cartModel.airLineModel.id ?: "")
 
-                val totalSeatsAvailable =
-                    airlineTicketModel.sumOf { it.airLineModel?.numberOfSeats ?: 0 }
+                val totalSeatsAvailable = airlineTicketModel.sumOf { it.numberOfRooms ?: 0 }
+
+                val numberOfAllSeats = (cartModel.airLineModel.numberOfSeats ?: 0)
+
+                val finalTotal = (  numberOfAllSeats- totalSeatsAvailable)
+
                 if (totalSeatsAvailable != 0) {
-                    if (cartModel.numberOfRooms > totalSeatsAvailable) {
-                        throw IllegalArgumentException("Error: Not enough seats available for the requested.")
+                    if (cartModel.numberOfRooms > finalTotal ) {
+                        throw IllegalArgumentException("Error: Not enough seats available for the requested number.")
+                    }
+                }
+                val returnAirlineTicketModel = getReturnAirlineModelListFromPurchase(cartModel.airLineModel.id ?: "")
+
+                val totalReturnSeatsAvailable = returnAirlineTicketModel.sumOf { it.numberOfRooms }
+
+                val returnNumberOfAllSeats = (cartModel.airLineModel.numberOfSeats ?: 0)
+                val returnFinalTotal = (returnNumberOfAllSeats - totalReturnSeatsAvailable)
+
+                if (totalReturnSeatsAvailable != 0) {
+                    if (cartModel.numberOfRooms > returnFinalTotal) {
+                        throw IllegalArgumentException("Error: Not enough seats available for the requested number.")
                     }
                 }
             }
@@ -194,6 +202,28 @@ class PurchaseDataSourceImpl(database: CoroutineDatabase) : PurchaseDataSource {
 
         return ApiResponse(data = "Success", succeeded = true, errorCode = errorCode)
     }
+
+
+    private suspend fun getAirlineModelListFromPurchase(id : String) : List<PurchaseModel>{
+        return purchaseModel.find(
+            Filters.eq(
+                "airLineModel.id",
+                id
+            )
+        ).toList()
+    }
+
+
+
+    private suspend fun getReturnAirlineModelListFromPurchase(id : String) : List<PurchaseModel>{
+        return  purchaseModel.find(
+            Filters.eq(
+                "returnAirLineModel.id",
+                id
+            )
+        ).toList()
+    }
+
 
     override suspend fun checkOutSubscription(
         userId: String,
