@@ -6,6 +6,7 @@ import com.example.domain.model.userModel.User
 
 interface UserDataSource {
     suspend fun getUserInfo(userId: String): User?
+    suspend fun getImageArray(imageUrl: String): ByteArray?
     suspend fun saveUserInfo(user: User): User?
     suspend fun deleteUser(userId: String): Boolean
     suspend fun updateUserInfo(

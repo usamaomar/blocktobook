@@ -9,6 +9,7 @@ data class CompanyInfoModel(
     val facilityNumber: String? = null,
     val tourismLicense: String? = null,
     val commercialRegister: String? = null,
+    val companyLogo: String? = null,
     val isCompanyInfoVerified: Boolean,
     val blockToBookFees: Double,
     val createdAt: Long? = 0

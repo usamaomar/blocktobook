@@ -24,11 +24,51 @@ private const val errorCode: Int = 10
 
 fun Route.userRoute() {
     val userDataSource: UserDataSource by KoinJavaComponent.inject(UserDataSource::class.java)
+    get(Api.User.GetUsingId.path) {
+        try {
+            val user = userDataSource.getUserInfo(call.parameters[paramNames.Id] ?: "")
+            call.respond(
+                message = ApiResponse(
+                    succeeded = true,
+                    data = user,
+                    errorCode = errorCode
+                )
+            )
+        } catch (e: Exception) {
+            call.respond(
+                message = ApiResponse(
+                    succeeded = false,
+                    message = arrayListOf(e.message.toString(), e.cause?.message.toString()),
+                    data = null, errorCode = errorCode
+                ), status = HttpStatusCode.ExpectationFailed
+            )
+        }
+    }
     get(Api.User.GetById.path) {
         try {
             val authorization = call.request.headers["Authorization"]
             val decodedPayload = decodeJwtPayload(authorization ?: "")
             val user = userDataSource.getUserInfo(decodedPayload["userId"] ?: "")
+            call.respond(
+                message = ApiResponse(
+                    succeeded = true,
+                    data = user,
+                    errorCode = errorCode
+                )
+            )
+        } catch (e: Exception) {
+            call.respond(
+                message = ApiResponse(
+                    succeeded = false,
+                    message = arrayListOf(e.message.toString(), e.cause?.message.toString()),
+                    data = null, errorCode = errorCode
+                ), status = HttpStatusCode.ExpectationFailed
+            )
+        }
+    }
+    get(Api.User.GetImageArray.path) {
+        try {
+            val user = userDataSource.getImageArray(call.parameters[paramNames.ImageUrl] ?: "")
             call.respond(
                 message = ApiResponse(
                     succeeded = true,

@@ -89,4 +89,5 @@ object paramNames {
     val languageId = "x-app-language-id"
     val status = "Status"
     val Id = "id"
+    val ImageUrl = "imageUrl"
 }

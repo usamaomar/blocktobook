@@ -200,6 +200,16 @@ object Api {
                 get() = "${User.path}/GetById"
         }
 
+        object GetImageArray : ApiPath {
+            override val path: String
+                get() = "${User.path}/GetImageArray"
+        }
+
+        object GetUsingId : ApiPath {
+            override val path: String
+                get() = "${User.path}/GetUsingId"
+        }
+
         object Put : ApiPath {
             override val path: String
                 get() = "${User.path}/Put"

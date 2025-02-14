@@ -10,16 +10,12 @@ import com.example.data.repository.walletDataSource.TransactionDataSource
 import com.example.domain.model.payment.CreatePaymentIncludeAmount
 import com.example.domain.model.payment.CreatePaymentModel
 import com.example.domain.model.publicModel.ApiResponse
-import com.example.domain.model.transactionModel.TransactionModel
 import com.example.endPoints.Api
 import com.example.plugins.decodeJwtPayload
-import com.example.util.TopUpType
-import com.example.util.TransactionType
 import com.example.util.receiveModel
 import com.example.util.toSafeDouble
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.httpPost
-import com.mongodb.client.model.Filters
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.http.HttpStatusCode
@@ -34,11 +30,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import org.bson.types.ObjectId
 import org.koin.java.KoinJavaComponent
-import org.litote.kmongo.json
-import org.litote.kmongo.util.idValue
-import kotlin.reflect.full.memberProperties
 
 
 private const val errorCode: Int = 64143

@@ -11,13 +11,17 @@ import com.mongodb.client.model.Updates.combine
 import org.litote.kmongo.coroutine.CoroutineDatabase
 import org.litote.kmongo.eq
 import com.mongodb.client.model.Updates.set
+import kotlinx.coroutines.runBlocking
 import org.litote.kmongo.and
 import org.litote.kmongo.ascending
 import org.litote.kmongo.descending
 import org.litote.kmongo.div
 import org.litote.kmongo.or
 import org.litote.kmongo.regex
-
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
 class UserDataSourceImpl(database: CoroutineDatabase) : UserDataSource {
 
     private val users = database.getCollection<User>()
@@ -25,6 +29,35 @@ class UserDataSourceImpl(database: CoroutineDatabase) : UserDataSource {
 
     override suspend fun getUserInfo(userId: String): User? {
         return users.findOne(filter = User::id eq userId)
+    }
+
+    override suspend fun getImageArray(imageUrl: String): ByteArray? {
+        return fetchImageAsByteArray(imageUrl)
+    }
+
+    private fun fetchImageAsByteArray(imageUrl: String): ByteArray = runBlocking {
+        // Initialize the Ktor HTTP client with the CIO engine
+        val client = HttpClient(CIO)
+
+        try {
+            // Send a GET request to the specified image URL
+            val response: HttpResponse = client.get(imageUrl)
+
+            // Check if the response status is OK (HTTP 200)
+            if (response.status.value == 200) {
+                // Read the response content as a ByteArray
+                response.readBytes()
+            } else {
+                // Handle non-OK HTTP responses
+                throw Exception("Failed to fetch image: ${response.status}")
+            }
+        } catch (e: Exception) {
+            // Handle exceptions (e.g., network errors)
+            throw Exception("Error fetching image: ${e.message}")
+        } finally {
+            // Close the HTTP client to free resources
+            client.close()
+        }
     }
 
     override suspend fun saveUserInfo(user: User): User {
@@ -53,11 +86,15 @@ class UserDataSourceImpl(database: CoroutineDatabase) : UserDataSource {
         val existingUser = users.findOne(filter = filter)
         val newUserModel = existingUser?.copy(
             name = updatedUserModel.name ?: existingUser.name,
-            profilePhoto = updatedUserModel.profilePhoto ?: existingUser.profilePhoto
+            profilePhoto = updatedUserModel.profilePhoto ?: existingUser.profilePhoto,
+            companyInfo = existingUser.companyInfo?.copy(
+                companyLogo = updatedUserModel.companyLogo ?: existingUser.companyInfo.companyLogo
+            )
         )
         val update = combine(
             set("name", newUserModel?.name),
             set("profilePhoto", newUserModel?.profilePhoto),
+            set("companyInfo.companyLogo", newUserModel?.companyInfo?.companyLogo),
         )
         users.updateOne(filter, update)
         return users.findOne(filter = filter)!!

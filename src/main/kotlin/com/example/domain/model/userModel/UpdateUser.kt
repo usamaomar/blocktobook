@@ -8,4 +8,5 @@ import kotlinx.serialization.Serializable
 data class UpdateUser(
     val name: String? = null,
     val profilePhoto: String? = null,
+    val companyLogo: String? = null,
 ) : Principal
