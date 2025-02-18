@@ -15,6 +15,14 @@ interface SendGridDataSource {
         actionMessege: String,
     ): ApiResponse<String?>
 
+
+    suspend fun notifyMerchantsAboutTravelUpdate(
+        ownerId: String,
+        ticketId: String,
+        newDepartureTime: String,
+        newArrivalTime: String
+    ): ApiResponse<String?>
+
     suspend fun confiramtionOfAccountApprove(
         merchantId: String,
         adminId: String,

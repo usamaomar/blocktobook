@@ -38,8 +38,19 @@ import com.example.data.repository.userDataSource.UserDataSourceImpl
 import com.example.data.repository.userDataSource.UserDataSource
 import com.example.data.repository.walletDataSource.TransactionDataSource
 import com.example.data.repository.walletDataSource.TransactionDataSourceImpl
+import com.example.domain.model.airlinesTicketModel.AirlineTicketModel
+import com.example.domain.model.cityModel.CityModel
+import com.example.domain.model.hotelModel.HotelModel
+import com.example.domain.model.purchaseModel.PurchaseModel
+import com.example.domain.model.userModel.User
+import com.example.endPoints.Api
 import com.example.util.Constants.DATABASE_NAME
 import com.example.util.Constants.DATABASE_TEST
+import com.mongodb.client.model.IndexOptions
+import com.mongodb.client.model.Indexes
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.koin.dsl.module
 import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.reactivestreams.KMongo
@@ -49,10 +60,38 @@ val koinModule = module {
 
     single {
 //         if (System.getenv("APP_ENV") == "test") {
-//            KMongo.createClient().coroutine.getDatabase(DATABASE_TEST) // Local test database
+//         KMongo.createClient().coroutine.getDatabase(DATABASE_TEST) // Local test database
 //        } else {
-        KMongo.createClient(System.getenv("MONGODB_URI")).coroutine.getDatabase(DATABASE_NAME) // Production database
+          KMongo.createClient(System.getenv("MONGODB_URI")).coroutine.getDatabase(DATABASE_NAME) // Production database
+//      val database =   KMongo.createClient(System.getenv("MONGODB_URI")).coroutine.getDatabase(DATABASE_NAME) // Production database
 //        }
+
+        // Create indexes on collections
+//        CoroutineScope(Dispatchers.IO).launch {
+//            database.getCollection<User>("users")
+//                .createIndex(Indexes.ascending("email"), IndexOptions().unique(true))
+//
+//            database.getCollection<CityModel>("cities")
+//                .createIndex(Indexes.text("name"))
+//
+//            database.getCollection<HotelModel>("hotels")
+//                .createIndex(Indexes.ascending("location"))
+//
+//            database.getCollection<PurchaseModel>("purchases")
+//                .createIndex(Indexes.compoundIndex(Indexes.ascending("userId"), Indexes.descending("createdAt")))
+//            val airLinesTickets = database.getCollection<AirlineTicketModel>("airLineTickets")
+//            airLinesTickets.createIndex(Indexes.ascending("userId")) // Index for user-based queries
+//            airLinesTickets.createIndex(Indexes.ascending("departureCityId", "arrivalCityId")) // Index for city-based queries
+//            airLinesTickets.createIndex(Indexes.ascending("departureDate", "arrivalDate")) // Optimize date range filtering
+//            airLinesTickets.createIndex(Indexes.ascending("pricePerSeat")) // Optimize price range filtering
+//            airLinesTickets.createIndex(Indexes.ascending("isRoundTrip")) // Filter for round-trip tickets
+//            airLinesTickets.createIndex(Indexes.ascending("airLineId")) // Index for airline-based queries
+//            airLinesTickets.createIndex(Indexes.ascending("roundTripId")) // Filter for round-trip tickets (if needed)
+//            airLinesTickets.createIndex(Indexes.ascending("departureAirportId", "arrivalAirportId")) // Airports-based queries
+//            airLinesTickets.createIndex(Indexes.ascending("flightNumber")) // Flight number-based queries
+//        }
+
+//        database
     }
 
     single<UserDataSource> {

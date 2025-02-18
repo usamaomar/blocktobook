@@ -1,5 +1,6 @@
 package com.example.data.repository.airLinesTicketsDataSource
 
+import com.example.data.repository.sendGrid.SendGridDataSource
 import com.example.domain.model.airlinesModel.AirLineModel
 import com.example.domain.model.airlinesModel.toResponseAirLineModel
 import com.example.domain.model.airlinesTicketModel.AirlineTicketModel
@@ -16,24 +17,26 @@ import com.example.domain.model.hotelModel.HotelProfileModel
 import com.example.domain.model.publicModel.ApiResponse
 import com.example.domain.model.publicModel.PagingApiResponse
 import com.example.domain.model.purchaseModel.PurchaseModel
-import com.mongodb.client.model.Accumulators
-import com.mongodb.client.model.Aggregates
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Updates
+import com.mongodb.client.model.Updates.combine
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import org.bson.conversions.Bson
 import org.bson.types.ObjectId
+import org.koin.java.KoinJavaComponent
 import org.litote.kmongo.and
 import org.litote.kmongo.coroutine.CoroutineDatabase
-import org.litote.kmongo.coroutine.aggregate
+import org.litote.kmongo.div
 import org.litote.kmongo.elemMatch
+import org.litote.kmongo.eq
 import org.litote.kmongo.regex
+import org.litote.kmongo.setValue
 import java.security.SecureRandom
 import kotlin.random.asKotlinRandom
 
 class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDataSource {
-
+    val sendGridDataSource: SendGridDataSource by KoinJavaComponent.inject(SendGridDataSource::class.java)
     private val airLinesTickets = database.getCollection<AirlineTicketModel>()
     private val citiesdatabase = database.getCollection<CityModel>()
     private val airPortsdatabase = database.getCollection<AirPortModel>()
@@ -137,8 +140,6 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
         userId: String,
         updateAirlineTicketModel: UpdateAirlineTicketModel
     ): ApiResponse<String?> {
-        val filter = Filters.eq("_id", ObjectId(updateAirlineTicketModel.id))
-
         val airlineTicketModel = purchaseModel.findOne(
             Filters.eq(
                 "airLineModel.id",
@@ -146,30 +147,7 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
             )
         )
 
-        if(airlineTicketModel!=null){
-            return ApiResponse(
-                data = null,
-                succeeded = false,
-                message = arrayListOf("Ticket Is purchased"),
-                errorCode = errorCode)
-        }
-
-        val returnAirlineTicketModel = purchaseModel.findOne(
-            Filters.eq(
-                "airLineModel.returnAirLineModel.id",
-                updateAirlineTicketModel.id
-            )
-        )
-
-        if(returnAirlineTicketModel!=null){
-            return ApiResponse(
-                data = null,
-                succeeded = false,
-                message = arrayListOf("Ticket Is purchased"),
-                errorCode = errorCode)
-        }
-
-        val ticketModel = airLinesTickets.findOne(filter)
+        val ticketModel = airLinesTickets.findOne(Filters.eq("_id", ObjectId(updateAirlineTicketModel.id)))
             ?: return ApiResponse(
                 data = null,
                 succeeded = false,
@@ -177,129 +155,192 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
                 errorCode = errorCode
             )
 
-        if (ticketModel.userId != userId) {
-            return ApiResponse(
-                data = null,
-                succeeded = false,
-                message = arrayListOf("Not Authorized to update"),
-                errorCode = errorCode
-            )
-        }
-
-        val update = Updates.combine(
-            Updates.set(
-                "departureCityId",
-                if (updateAirlineTicketModel.departureCityId.isNullOrBlank()) ticketModel.departureCityId else updateAirlineTicketModel.departureCityId
-            ),
-            Updates.set(
-                "arrivalCityId",
-                if (updateAirlineTicketModel.arrivalCityId.isNullOrBlank()) ticketModel.arrivalCityId else updateAirlineTicketModel.arrivalCityId
-            ),
-            Updates.set(
-                "departureAirportId",
-                if (updateAirlineTicketModel.departureAirportId.isNullOrBlank()) ticketModel.departureAirportId else updateAirlineTicketModel.departureAirportId
-            ),
-            Updates.set(
-                "arrivalAirportId",
-                if (updateAirlineTicketModel.arrivalAirportId.isNullOrBlank()) ticketModel.arrivalAirportId else updateAirlineTicketModel.arrivalAirportId
-            ),
-            Updates.set(
-                "airLineId",
-                if (updateAirlineTicketModel.airLineId.isNullOrBlank()) ticketModel.airLineId else updateAirlineTicketModel.airLineId
-            ),
-            Updates.set(
-                "departureDate",
-                if (updateAirlineTicketModel.departureDate.isNullOrBlank()) ticketModel.departureDate else updateAirlineTicketModel.departureDate
-            ),
-            Updates.set(
-                "arrivalDate",
-                if (updateAirlineTicketModel.arrivalDate.isNullOrBlank()) ticketModel.arrivalDate else updateAirlineTicketModel.arrivalDate
-            ),
-            Updates.set(
-                "departureTime",
-                if (updateAirlineTicketModel.departureTime.isNullOrBlank()) ticketModel.departureTime else updateAirlineTicketModel.departureTime
-            ),
-            Updates.set(
-                "arrivalTime",
-                if (updateAirlineTicketModel.arrivalTime.isNullOrBlank()) ticketModel.arrivalTime else updateAirlineTicketModel.arrivalTime
-            ),
-            Updates.set(
-                "travelClass",
-                if (updateAirlineTicketModel.travelClass == 0) ticketModel.travelClass else updateAirlineTicketModel.travelClass
-            ),
-            Updates.set(
-                "pricePerSeat",
-                if (updateAirlineTicketModel.pricePerSeat == 0.0) ticketModel.pricePerSeat else updateAirlineTicketModel.pricePerSeat
-            ),
-            Updates.set(
-                "pricePerSeatRoundTrip",
-                updateAirlineTicketModel.pricePerSeatRoundTrip ?: ticketModel.pricePerSeatRoundTrip
-            ),
-            Updates.set(
-                "numberOfSeats",
-                updateAirlineTicketModel.numberOfSeats ?: ticketModel.numberOfSeats
-            ),
-            Updates.set(
-                "numberOfChildren",
-                updateAirlineTicketModel.numberOfChildren ?: ticketModel.numberOfChildren
-            ),
-            Updates.set(
-                "flightNumber",
-                updateAirlineTicketModel.flightNumber ?: ticketModel.flightNumber
-            ),
-            Updates.set(
-                "pricePerInfant",
-                if(updateAirlineTicketModel.numberOfChildren == 0)  0.0 else (updateAirlineTicketModel.pricePerInfant ?: ticketModel.pricePerInfant)
-            ),
-            Updates.set(
-                "pricePerInfantRoundTrip",
-                if(updateAirlineTicketModel.numberOfChildren == 0)  0.0 else (updateAirlineTicketModel.pricePerInfantRoundTrip ?: ticketModel.pricePerInfantRoundTrip)
-            ),
-            Updates.set(
-                "totalAllowances",
-                updateAirlineTicketModel.totalAllowances ?: ticketModel.totalAllowances
-            ),
-            Updates.set(
-                "childAge",
-                updateAirlineTicketModel.childAge ?: ticketModel.childAge
-            ),
-            Updates.set(
-                "isVisible",
-                updateAirlineTicketModel.isVisible ?: ticketModel.isVisible
-            ),
-            Updates.set(
-                "userId",
-                userId
+        val returnAirlineTicketModel = purchaseModel.findOne(
+            Filters.eq(
+                "returnAirLineModel.id",
+                updateAirlineTicketModel.id
             )
         )
-        val updateResult = airLinesTickets.updateOne(filter, update)
-//        roundTrip
-        if(ticketModel.roundTripId !=null) {
-            val filterRound = Filters.and(
-                Filters.eq("roundTripId", ticketModel.roundTripId),
-                Filters.ne("_id", ObjectId(updateAirlineTicketModel.id))
-            )
-
-            val ticketModelRound = airLinesTickets.findOne(filterRound)
-            val updateRound = Updates.combine(
+        if(airlineTicketModel ==null && returnAirlineTicketModel == null && ticketModel.userId == userId){
+            val update = Updates.combine(
+                Updates.set(
+                    "departureCityId",
+                    if (updateAirlineTicketModel.departureCityId.isNullOrBlank()) ticketModel.departureCityId else updateAirlineTicketModel.departureCityId
+                ),
+                Updates.set(
+                    "arrivalCityId",
+                    if (updateAirlineTicketModel.arrivalCityId.isNullOrBlank()) ticketModel.arrivalCityId else updateAirlineTicketModel.arrivalCityId
+                ),
+                Updates.set(
+                    "departureAirportId",
+                    if (updateAirlineTicketModel.departureAirportId.isNullOrBlank()) ticketModel.departureAirportId else updateAirlineTicketModel.departureAirportId
+                ),
+                Updates.set(
+                    "arrivalAirportId",
+                    if (updateAirlineTicketModel.arrivalAirportId.isNullOrBlank()) ticketModel.arrivalAirportId else updateAirlineTicketModel.arrivalAirportId
+                ),
+                Updates.set(
+                    "airLineId",
+                    if (updateAirlineTicketModel.airLineId.isNullOrBlank()) ticketModel.airLineId else updateAirlineTicketModel.airLineId
+                ),
+                Updates.set(
+                    "departureDate",
+                    if (updateAirlineTicketModel.departureDate.isNullOrBlank()) ticketModel.departureDate else updateAirlineTicketModel.departureDate
+                ),
+                Updates.set(
+                    "arrivalDate",
+                    if (updateAirlineTicketModel.arrivalDate.isNullOrBlank()) ticketModel.arrivalDate else updateAirlineTicketModel.arrivalDate
+                ),
+                Updates.set(
+                    "departureTime",
+                    if (updateAirlineTicketModel.departureTime.isNullOrBlank()) ticketModel.departureTime else updateAirlineTicketModel.departureTime
+                ),
+                Updates.set(
+                    "arrivalTime",
+                    if (updateAirlineTicketModel.arrivalTime.isNullOrBlank()) ticketModel.arrivalTime else updateAirlineTicketModel.arrivalTime
+                ),
+                Updates.set(
+                    "travelClass",
+                    if (updateAirlineTicketModel.travelClass == 0) ticketModel.travelClass else updateAirlineTicketModel.travelClass
+                ),
+                Updates.set(
+                    "pricePerSeat",
+                    if (updateAirlineTicketModel.pricePerSeat == 0.0) ticketModel.pricePerSeat else updateAirlineTicketModel.pricePerSeat
+                ),
                 Updates.set(
                     "pricePerSeatRoundTrip",
-                    updateAirlineTicketModel.pricePerSeatRoundTrip
-                        ?: ticketModelRound?.pricePerSeatRoundTrip
+                    updateAirlineTicketModel.pricePerSeatRoundTrip ?: ticketModel.pricePerSeatRoundTrip
+                ),
+                Updates.set(
+                    "numberOfSeats",
+                    updateAirlineTicketModel.numberOfSeats ?: ticketModel.numberOfSeats
+                ),
+                Updates.set(
+                    "numberOfChildren",
+                    updateAirlineTicketModel.numberOfChildren ?: ticketModel.numberOfChildren
+                ),
+                Updates.set(
+                    "flightNumber",
+                    updateAirlineTicketModel.flightNumber ?: ticketModel.flightNumber
+                ),
+                Updates.set(
+                    "pricePerInfant",
+                    if(updateAirlineTicketModel.numberOfChildren == 0)  0.0 else (updateAirlineTicketModel.pricePerInfant ?: ticketModel.pricePerInfant)
+                ),
+                Updates.set(
+                    "pricePerInfantRoundTrip",
+                    if(updateAirlineTicketModel.numberOfChildren == 0)  0.0 else (updateAirlineTicketModel.pricePerInfantRoundTrip ?: ticketModel.pricePerInfantRoundTrip)
+                ),
+                Updates.set(
+                    "totalAllowances",
+                    updateAirlineTicketModel.totalAllowances ?: ticketModel.totalAllowances
+                ),
+                Updates.set(
+                    "childAge",
+                    updateAirlineTicketModel.childAge ?: ticketModel.childAge
+                ),
+                Updates.set(
+                    "isVisible",
+                    updateAirlineTicketModel.isVisible ?: ticketModel.isVisible
+                ),
+                Updates.set(
+                    "userId",
+                    userId
                 )
             )
-            val updateResultRound = airLinesTickets.updateOne(filterRound, updateRound)
+            val updateResult = airLinesTickets.updateOne(Filters.eq("_id", ObjectId(updateAirlineTicketModel.id)), update)
+            if(ticketModel.roundTripId !=null) {
+                val filterRound = Filters.and(
+                    Filters.eq("roundTripId", ticketModel.roundTripId),
+                    Filters.ne("_id", ObjectId(updateAirlineTicketModel.id))
+                )
+
+                val ticketModelRound = airLinesTickets.findOne(filterRound)
+                val updateRound = Updates.combine(
+                    Updates.set(
+                        "pricePerSeatRoundTrip",
+                        updateAirlineTicketModel.pricePerSeatRoundTrip
+                            ?: ticketModelRound?.pricePerSeatRoundTrip
+                    )
+                )
+                val updateResultRound = airLinesTickets.updateOne(filterRound, updateRound)
+               return if (updateResult.matchedCount > 0) {
+                    ApiResponse(data = "Success", succeeded = true, errorCode = errorCode)
+                } else {
+                    ApiResponse(
+                        data = null,
+                        succeeded = false,
+                        message = arrayListOf("AirLineTicket not found"),
+                        errorCode = errorCode
+                    )
+                }
+            }
+        }else if(ticketModel.userId == userId){
+            updateTimeOnPurchasedAndAirlineTickets(userId,updateAirlineTicketModel.id,  updateAirlineTicketModel.departureTime,   updateAirlineTicketModel.arrivalTime)
+            updateVisibilityOnAirlineTickets(updateAirlineTicketModel.id,  updateAirlineTicketModel.isVisible ?: true)
+            return  ApiResponse(data = "Success", succeeded = true, errorCode = errorCode)
         }
-        return  if (updateResult.matchedCount > 0) {
-            ApiResponse(data = "Success", succeeded = true, errorCode = errorCode)
-        } else {
-            ApiResponse(
-                data = null,
-                succeeded = false,
-                message = arrayListOf("AirLineTicket not found"),
-                errorCode = errorCode
-            )
+        return  ApiResponse(
+            data = null,
+            succeeded = false,
+            message = arrayListOf("User Not Found"),
+            errorCode = errorCode
+        )
+    }
+
+
+
+    private suspend fun updateVisibilityOnAirlineTickets(ticketId: String, visibility: Boolean){
+        val filter = Filters.eq("_id", ObjectId(ticketId))
+        val ticketModel = airLinesTickets.findOne(filter)
+        if(ticketModel?.isVisible!= visibility){
+            airLinesTickets.updateOne(filter, Updates.combine(
+                Updates.set(
+                    "isVisible",
+                    visibility
+                ),
+            ))
         }
+    }
+
+  private suspend fun updateTimeOnPurchasedAndAirlineTickets( userId: String,ticketId: String, departureTime : String?, arrivalTime: String?){
+      val filter = Filters.eq("_id", ObjectId(ticketId))
+      val ticketModel = airLinesTickets.findOne(filter)
+      if(ticketModel?.departureTime!= departureTime || ticketModel?.arrivalTime!= arrivalTime){
+           // send email
+
+          val value = purchaseModel.updateMany(
+              PurchaseModel::returnAirLineModel / ResponseAirlineTicketModel::id eq ticketId, // Correctly filters by nested field
+              combine(
+                  setValue(PurchaseModel::returnAirLineModel / ResponseAirlineTicketModel::departureTime, departureTime),
+                  setValue(PurchaseModel::returnAirLineModel / ResponseAirlineTicketModel::arrivalTime, arrivalTime)
+              )
+          )
+
+
+          val value2 = purchaseModel.updateMany(
+              PurchaseModel::airLineModel / ResponseAirlineTicketModel::id eq ticketId, // Correctly filters by nested field
+              combine(
+                  setValue(PurchaseModel::airLineModel / ResponseAirlineTicketModel::departureTime, departureTime),
+                  setValue(PurchaseModel::airLineModel / ResponseAirlineTicketModel::arrivalTime, arrivalTime)
+              )
+          )
+
+          if(value2.modifiedCount > 0 || value.modifiedCount > 0){
+              println()
+          }
+          airLinesTickets.updateOne(filter, Updates.combine(
+              Updates.set(
+                  "departureTime",
+                  departureTime
+              ),
+              Updates.set(
+                  "arrivalTime",
+                  arrivalTime
+              ),
+          ))
+          sendGridDataSource.notifyMerchantsAboutTravelUpdate(userId, ticketId, departureTime ?: "", arrivalTime ?: "")
+      }
     }
 
 

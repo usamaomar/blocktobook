@@ -1,10 +1,12 @@
 package com.example.data.repository.sendGrid
 
 import com.example.data.repository.sendGridKey.SendGridKeyDataSource
+import com.example.domain.model.airlinesTicketModel.AirlineTicketModel
 import com.example.domain.model.publicModel.ApiResponse
 import com.example.domain.model.purchaseModel.PurchaseModel
 import com.example.domain.model.userModel.User
 import com.example.util.AccessRole
+import com.mongodb.client.model.Filters
 import com.sendgrid.Method
 import com.sendgrid.Request
 import com.sendgrid.SendGrid
@@ -17,6 +19,7 @@ import kotlinx.coroutines.withContext
 import org.bson.types.ObjectId
 import org.koin.java.KoinJavaComponent
 import org.litote.kmongo.coroutine.CoroutineDatabase
+import org.litote.kmongo.div
 import org.litote.kmongo.eq
 import java.io.IOException
 
@@ -232,6 +235,104 @@ class SendGridDataSourceImpl(database: CoroutineDatabase) : SendGridDataSource {
             }
         }
     }
+
+    override suspend fun notifyMerchantsAboutTravelUpdate(
+        ownerId: String,
+        ticketId: String,
+        newDepartureTime: String,
+        newArrivalTime: String
+    ): ApiResponse<String?> {
+        return withContext(Dispatchers.IO) {
+            try {
+                // Fetch all merchants who purchased this ticket
+                var purchasedTickets: List<PurchaseModel>
+                purchasedTickets = purchaseModel.find(
+                    Filters.eq(
+                    "airLineModel.id",
+                     ticketId
+                )).toList()
+
+                if (purchasedTickets.isEmpty()) {
+                    purchasedTickets = purchaseModel.find(
+                        Filters.eq(
+                            "returnAirLineModel.id",
+                            ticketId
+                        )).toList()
+                }
+                if (purchasedTickets.isEmpty()) {
+                    return@withContext ApiResponse(
+                        data = null,
+                        succeeded = false,
+                        message = arrayListOf("No merchants found for this ticket."),
+                        errorCode = errorCode
+                    )
+                }
+
+                val sendGrid = SendGrid(searchDataSource.getSendGridKey())
+
+                purchasedTickets.forEach { purchase ->
+                    val merchant = users.findOne(User::id eq purchase.userId)
+
+                    if (merchant != null && !merchant.emailAddress.isNullOrEmpty()) {
+                        val emailContent = """
+                        Hello ${merchant.name ?: "Merchant"},
+                        
+                        Your flight details have been updated:
+                        - **New Departure Time**: $newDepartureTime
+                        - **New Arrival Time**: $newArrivalTime
+                        
+                        Please check your booking for more details.
+                        
+                        Regards,  
+                        Hayyak Team
+                    """.trimIndent()
+
+                        val email = Mail().apply {
+                            from = Email(users.findOne(filter = User::id eq ownerId)?.emailAddress) // Replace with your sender email
+                            subject = "Updated Travel Schedule"
+                            addContent(Content("text/html", emailContent)) // HTML formatted email
+                            addPersonalization(Personalization().apply {
+                                addTo(Email(merchant.emailAddress))
+                            })
+                        }
+
+                        val request = Request().apply {
+                            method = Method.POST
+                            endpoint = "mail/send"
+                            body = email.build()
+                        }
+
+                        val response = sendGrid.api(request)
+
+                        if (response.statusCode != 202) {
+                            return@withContext ApiResponse(
+                                data = null,
+                                succeeded = false,
+                                message = arrayListOf("Failed to send email to ${merchant.emailAddress}, status code: ${response.statusCode}"),
+                                errorCode = errorCode
+                            )
+                        }
+                    }
+                }
+
+
+                ApiResponse(
+                    data = "Emails sent successfully to all merchants",
+                    succeeded = true,
+                    errorCode = null
+                )
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+                ApiResponse(
+                    data = null,
+                    succeeded = false,
+                    message = arrayListOf("Exception occurred: ${ex.message}"),
+                    errorCode = errorCode
+                )
+            }
+        }
+    }
+
 
 
     override suspend fun confiramtionOfAccountApprove(
