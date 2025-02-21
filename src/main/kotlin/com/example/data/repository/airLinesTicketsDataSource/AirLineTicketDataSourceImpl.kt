@@ -438,8 +438,8 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
                 null,
                 null,
                 null,
-                getTotalNumberOfRoomsForUser(userId, ticket.id?.toHexString(), ticket.numberOfSeats ?: 0),
-                getTotalNumberOfRoomsForUser(userId, ticket.id?.toHexString(), ticket.numberOfSeats ?: 0),
+                0,
+                0,
             )
         }
 
