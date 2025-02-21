@@ -11,7 +11,7 @@ interface PurchaseDataSource {
     suspend fun checkOut(
         userId: String
     ): ApiResponse<String?>
-
+    suspend fun createIndex()
 
     suspend fun checkOutSubscription(
         userId: String,

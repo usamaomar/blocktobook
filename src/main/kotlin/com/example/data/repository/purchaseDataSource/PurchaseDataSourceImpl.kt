@@ -28,12 +28,15 @@ import com.example.domain.model.subscriptionTypesModel.SubscriptionTypeModel
 import com.example.domain.model.transactionModel.TransactionModel
 import com.example.domain.model.userModel.User
 import com.example.domain.model.walletAmountModel.WalletAmountModel
+import com.example.plugins.Indexes
 import com.example.util.Status
 import com.example.util.TopUpType
 import com.example.util.TransactionType
 import com.example.util.toDoubleAmount
 import com.google.api.gax.rpc.Batch
 import com.mongodb.client.model.Filters
+import com.mongodb.client.model.IndexOptions
+import com.mongodb.client.model.Indexes
 import com.mongodb.client.model.Updates.combine
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -201,6 +204,37 @@ class PurchaseDataSourceImpl(database: CoroutineDatabase) : PurchaseDataSource {
         updateBuyerWallet(userId, updatedBuyerWalletAmount, blockToBookFees, checkoutId)
 
         return ApiResponse(data = "Success", succeeded = true, errorCode = errorCode)
+    }
+
+    override suspend fun createIndex() {
+        purchaseModel.createIndex(
+            Indexes.ascending("airLineModel.departureCity.id"),
+            IndexOptions().background(true)
+        )
+
+        // Create an index on airLineModel.pricePerSeat
+        purchaseModel.createIndex(
+            Indexes.ascending("airLineModel.pricePerSeat"),
+            IndexOptions().background(true)
+        )
+
+        // Create an index on createdAt
+        purchaseModel.createIndex(
+            Indexes.ascending("createdAt"),
+            IndexOptions().background(true)
+        )
+
+        // Create an index on airLineModel.isVisible
+        purchaseModel.createIndex(
+            Indexes.ascending("airLineModel.isVisible"),
+            IndexOptions().background(true)
+        )
+
+        // Create an index on status
+        purchaseModel.createIndex(
+            Indexes.ascending("status"),
+            IndexOptions().background(true)
+        )
     }
 
 
