@@ -388,6 +388,7 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
         val queryForItemFilter = mutableListOf<Bson>()
 
         queryForItemFilter.add(eq("isVisible", true))
+//        queryForItemFilter.add(gte("numberOfChildren", filterByChildrenTicketNumber ?: 0))
 
         if (filterByAdultsTicketNumber != null) {
             queryForItemFilter.add(gte("numberOfSeats", filterByAdultsTicketNumber))

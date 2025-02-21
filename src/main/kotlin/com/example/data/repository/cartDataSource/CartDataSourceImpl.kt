@@ -427,12 +427,18 @@ fun List<CartModel>.calculateTotalPrice(): Double {
         }else{
             if(cart.returnAirLineTicketModel!=null){
                 if(cart.returnAirLineTicketModel.roundTripId == cart.airLineTicketModel?.roundTripId){
-                    (cart.airLineTicketModel?.pricePerSeatRoundTrip ?:0.0) * cart.numberOfRooms
+                    ( (cart.airLineTicketModel?.pricePerSeatRoundTrip ?: 0.0) * cart.numberOfRooms ) + ( (cart.airLineTicketModel?.pricePerInfantRoundTrip ?: 0.0) * (cart.numberOfInfants ?: 0) )
+
+//                    (cart.airLineTicketModel?.pricePerSeatRoundTrip ?:0.0) * cart.numberOfRooms
                 }else{
-                    ((cart.airLineTicketModel?.pricePerSeat ?:0.0) + (cart.returnAirLineTicketModel.pricePerSeat)) * cart.numberOfRooms
+                    ( ((cart.airLineTicketModel?.pricePerSeat ?: 0.0) + (cart.returnAirLineTicketModel.pricePerSeat)) * cart.numberOfRooms) + ( ((cart.airLineTicketModel?.pricePerInfant ?: 0.0) + (cart.returnAirLineTicketModel.pricePerInfant?:0.0)) * (cart.numberOfInfants?:0))
+
+//                    ((cart.airLineTicketModel?.pricePerSeat ?:0.0) + (cart.returnAirLineTicketModel.pricePerSeat)) * cart.numberOfRooms
                 }
                 }else  {
-                (cart.airLineTicketModel?.pricePerSeat ?:0.0) * cart.numberOfRooms
+                ( (cart.airLineTicketModel?.pricePerSeat ?: 0.0) * cart.numberOfRooms) + ( (cart.airLineTicketModel?.pricePerInfant ?: 0.0) * (cart.numberOfInfants?:0))
+
+//                (cart.airLineTicketModel?.pricePerSeat ?:0.0) * cart.numberOfRooms
             }
         }
     }

@@ -395,8 +395,8 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
 
         // Prepare the query and pagination
         val finalQuery = and(queryFilters)
-        val totalCount = airLinesTickets.countDocuments(finalQuery).toInt()
-        val totalPages = if (pageSize == 0) 1 else (totalCount + pageSize - 1) / pageSize
+//        val totalCount = airLinesTickets.countDocuments(finalQuery).toInt()
+        val totalPages = if (pageSize == 0) 1 else (10 + pageSize - 1) / pageSize
         val hasPreviousPage = pageNumber > 1
         val hasNextPage = pageNumber < totalPages
 
@@ -445,7 +445,7 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
             data = data,
             currentPage = pageNumber,
             totalPages = totalPages,
-            totalCount = totalCount,
+            totalCount = 10,
             hasPreviousPage = hasPreviousPage,
             hasNextPage = hasNextPage,
             errorCode = errorCode
