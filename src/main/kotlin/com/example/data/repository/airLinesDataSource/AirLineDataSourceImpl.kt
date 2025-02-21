@@ -10,7 +10,10 @@ import com.example.domain.model.airlinesModel.UpdateAirLine
 import com.example.domain.model.airlinesModel.toAirLineModel
 import com.example.domain.model.cityModel.CityModel
 import com.example.domain.model.cityModel.toResponseCityModel
+import com.example.plugins.Indexes
 import com.mongodb.client.model.Filters.eq
+import com.mongodb.client.model.IndexOptions
+import com.mongodb.client.model.Indexes
 import com.mongodb.client.model.Updates.combine
 import org.litote.kmongo.coroutine.CoroutineDatabase
 import org.litote.kmongo.eq
@@ -120,6 +123,36 @@ class AirLineDataSourceImpl(database: CoroutineDatabase) : AirLineDataSource {
         } else {
             ApiResponse(data = null, succeeded = false, message = arrayListOf("AirLine not found"),  errorCode = errorCode)
         }
+    }
+
+    override suspend fun createIndex() {
+        airLines.createIndex(
+            Indexes.compoundIndex(
+                Indexes.ascending("userId"),
+                Indexes.ascending("hotelId"),
+                Indexes.ascending("price")
+            ),
+            IndexOptions()
+        )
+
+        // Index 2: userId, reservationDate, checkOutDate
+        airLines.createIndex(
+            Indexes.compoundIndex(
+                Indexes.ascending("userId"),
+                Indexes.ascending("reservationDate"),
+                Indexes.ascending("checkOutDate")
+            ),
+            IndexOptions()
+        )
+
+        // Index 3: userId, airLineIds
+        airLines.createIndex(
+            Indexes.compoundIndex(
+                Indexes.ascending("userId"),
+                Indexes.ascending("airLineIds")
+            ),
+            IndexOptions()
+        )
     }
 
     override suspend fun getAll(

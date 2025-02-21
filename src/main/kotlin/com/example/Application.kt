@@ -12,6 +12,7 @@ fun Application.module() {
     firebaseInit()
     configureCORS()
     intercept()
+    Indexes()
     configureSerialization()
     configureRouting()
     configureMonitoring()

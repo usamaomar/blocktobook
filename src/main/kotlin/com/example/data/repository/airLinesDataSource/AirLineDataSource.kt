@@ -11,6 +11,7 @@ interface AirLineDataSource {
     suspend fun getById(id: String, xAppLanguageId: Int): ApiResponse<ResponseAirLineModel?>?
     suspend fun post(airLineModel: CreateAirLine): ApiResponse<AirLineModel?>?
     suspend fun put(updateAirLineModel: UpdateAirLine): ApiResponse<AirLineModel?>?
+    suspend fun createIndex()
     suspend fun getAll(searchText: String,
                        pageSize: Int,
                        pageNumber: Int,
