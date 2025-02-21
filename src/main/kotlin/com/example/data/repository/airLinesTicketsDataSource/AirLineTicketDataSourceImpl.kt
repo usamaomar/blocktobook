@@ -9,6 +9,7 @@ import com.example.domain.model.airlinesTicketModel.ResponseAirlineTicketModel
 import com.example.domain.model.airlinesTicketModel.UpdateAirlineTicketModel
 import com.example.domain.model.airlinesTicketModel.toResponseAirlineTicketModel
 import com.example.domain.model.airportsModel.AirPortModel
+import com.example.domain.model.airportsModel.ResponseAirPortModel
 import com.example.domain.model.airportsModel.toResponseAirPortModel
 import com.example.domain.model.cityModel.CityModel
 import com.example.domain.model.cityModel.toResponseCityModel
@@ -20,8 +21,10 @@ import com.example.domain.model.purchaseModel.PurchaseModel
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Updates
 import com.mongodb.client.model.Updates.combine
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 import org.bson.conversions.Bson
 import org.bson.types.ObjectId
 import org.koin.java.KoinJavaComponent
@@ -395,46 +398,46 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
 
         // Prepare the query and pagination
         val finalQuery = and(queryFilters)
-//        val totalCount = airLinesTickets.countDocuments(finalQuery).toInt()
-        val totalPages = if (pageSize == 0) 1 else (10 + pageSize - 1) / pageSize
+        val totalCount = airLinesTickets.countDocuments(finalQuery).toInt()
+        val totalPages = if (pageSize == 0) 1 else (totalCount + pageSize - 1) / pageSize
         val hasPreviousPage = pageNumber > 1
         val hasNextPage = pageNumber < totalPages
 
         // Fetch tickets with pagination
-        val tickets = airLinesTickets.find(finalQuery)
-            .skip(skip)
-            .limit(pageSize)
-            .toList()
+        val tickets = withContext(Dispatchers.IO) {
+            airLinesTickets.find(finalQuery)
+                .skip(skip)
+                .limit(pageSize)
+                .toList()
+        }
 
         // Batch fetch related data
         val cityIds = tickets.mapNotNull { it.departureCityId } + tickets.mapNotNull { it.arrivalCityId }
-        val airportIds = tickets.mapNotNull { it.departureAirportId } + tickets.mapNotNull { it.arrivalAirportId }
-        val airlineIds = tickets.mapNotNull { it.airLineId }
+//        val airportIds = tickets.mapNotNull { it.departureAirportId } + tickets.mapNotNull { it.arrivalAirportId }
+//        val airlineIds = tickets.mapNotNull { it.airLineId }
 
         // Fetch related data in parallel
-        val (cities, airports, airlines) = coroutineScope {
-            val cityDeferred = async { citiesdatabase.find(Filters.`in`("_id", cityIds.map(::ObjectId))).toList() }
-            val airportDeferred = async { airPortsdatabase.find(Filters.`in`("_id", airportIds.map(::ObjectId))).toList() }
-            val airlineDeferred = async { airLinesdatabase.find(Filters.`in`("_id", airlineIds.map(::ObjectId))).toList() }
-            Triple(cityDeferred.await(), airportDeferred.await(), airlineDeferred.await())
+        val cities = withContext(Dispatchers.IO) {
+            citiesdatabase.find(Filters.`in`("_id", cityIds.map(::ObjectId))).toList()
         }
+
 
         // Map tickets to response models
         val data = tickets.map { ticket ->
             val departureCity = cities.find { it.id?.toHexString() == ticket.departureCityId }
             val arrivalCity = cities.find { it.id?.toHexString() == ticket.arrivalCityId }
-            val departureAirport = airports.find { it.id?.toHexString() == ticket.departureAirportId }
-            val arrivalAirport = airports.find { it.id?.toHexString() == ticket.arrivalAirportId }
-            val airline = airlines.find { it.id?.toHexString() == ticket.airLineId }
+//            val departureAirport = airports.find { it.id?.toHexString() == ticket.departureAirportId }
+//            val arrivalAirport = airports.find { it.id?.toHexString() == ticket.arrivalAirportId }
+//            val airline = airlines.find { it.id?.toHexString() == ticket.airLineId }
 
             ticket.toResponseAirlineTicketModel(
                 ticket.id?.toHexString() ?: "",
                 departureCity?.toResponseCityModel(xAppLanguageId, ""),
                 arrivalCity?.toResponseCityModel(xAppLanguageId, ""),
-                departureAirport?.toResponseAirPortModel(),
-                arrivalAirport?.toResponseAirPortModel(),
-                airline?.toResponseAirLineModel(),
-                airline?.toResponseAirLineModel(),
+                null,
+                null,
+                null,
+                null,
                 getTotalNumberOfRoomsForUser(userId, ticket.id?.toHexString(), ticket.numberOfSeats ?: 0),
                 getTotalNumberOfRoomsForUser(userId, ticket.id?.toHexString(), ticket.numberOfSeats ?: 0),
             )
@@ -445,7 +448,7 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
             data = data,
             currentPage = pageNumber,
             totalPages = totalPages,
-            totalCount = 10,
+            totalCount = totalCount,
             hasPreviousPage = hasPreviousPage,
             hasNextPage = hasNextPage,
             errorCode = errorCode
