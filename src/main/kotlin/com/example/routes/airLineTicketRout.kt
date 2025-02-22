@@ -169,4 +169,60 @@ fun Route.airLineTicketRout() {
                 )
             }
         }
+
+
+        get(Api.AirLineTicket.GetAirlins.path) {
+            try {
+                val authorization = call.request.headers["Authorization"]
+                val decodedPayload = decodeJwtPayload(authorization ?: "")
+                val userId = decodedPayload["userId"] ?: ""
+                val pagingApiResponse = airLineTicketDataSource.getAirlineTicketDetailsById(
+                    ticketId = call.parameters[paramNames.Id]?.toSafeString() ?: "",
+                    xAppLanguageId = call.parameters[paramNames.languageId]?.toSafeInt() ?: 1,
+                )
+                call.respond(
+                    message = pagingApiResponse ?: PagingApiResponse(
+                        succeeded = false,
+                        message = arrayListOf("Something went wrong"),
+                        data = null, errorCode = errorCode
+                    )
+                )
+            } catch (e: Exception) {
+                call.respond(
+                    message = ApiResponse(
+                        succeeded = false,
+                        message = arrayListOf(e.message.toString(),e.cause?.message.toString()),
+                        data = null, errorCode = errorCode
+                    ), status = HttpStatusCode.ExpectationFailed
+                )
+            }
+        }
+
+
+    get(Api.AirLineTicket.GetNumbers.path) {
+        try {
+            val authorization = call.request.headers["Authorization"]
+            val decodedPayload = decodeJwtPayload(authorization ?: "")
+            val userId = decodedPayload["userId"] ?: ""
+            val pagingApiResponse = airLineTicketDataSource.getNumberOfRemainingSeatsById(
+                ticketId = call.parameters[paramNames.Id]?.toSafeString() ?: "",
+                userId = userId,
+            )
+            call.respond(
+                message = pagingApiResponse ?: PagingApiResponse(
+                    succeeded = false,
+                    message = arrayListOf("Something went wrong"),
+                    data = null, errorCode = errorCode
+                )
+            )
+        } catch (e: Exception) {
+            call.respond(
+                message = ApiResponse(
+                    succeeded = false,
+                    message = arrayListOf(e.message.toString(),e.cause?.message.toString()),
+                    data = null, errorCode = errorCode
+                ), status = HttpStatusCode.ExpectationFailed
+            )
+        }
+    }
 }

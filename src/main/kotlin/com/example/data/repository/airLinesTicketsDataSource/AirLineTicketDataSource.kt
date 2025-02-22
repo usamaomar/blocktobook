@@ -18,6 +18,18 @@ interface AirLineTicketDataSource {
 
     suspend fun getById(id: String): ApiResponse<ResponseAirlineTicketModel?>?
 
+    suspend fun getAirlineTicketDetailsById(
+        ticketId: String,
+        xAppLanguageId: Int
+    ): ApiResponse<ResponseAirlineTicketModel?>?
+
+
+
+    suspend fun getNumberOfRemainingSeatsById(
+        ticketId: String,
+        userId: String,
+    ): ApiResponse<ResponseAirlineTicketModel?>?
+
     suspend fun getAll(
         userId: String,
         searchText: String,

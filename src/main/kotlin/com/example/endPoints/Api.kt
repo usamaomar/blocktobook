@@ -255,6 +255,14 @@ object Api {
             override val path: String
                 get() = "${AirLineTicket.path}/GetAll"
         }
+        object GetAirlins : ApiPath {
+            override val path: String
+                get() = "${AirLineTicket.path}/GetAirlins"
+        }
+        object GetNumbers : ApiPath {
+            override val path: String
+                get() = "${AirLineTicket.path}/GetNumbers"
+        }
 
     }
 

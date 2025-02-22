@@ -2,6 +2,7 @@ package com.example.data.repository.airLinesTicketsDataSource
 
 import com.example.data.repository.sendGrid.SendGridDataSource
 import com.example.domain.model.airlinesModel.AirLineModel
+import com.example.domain.model.airlinesModel.ResponseAirLineModel
 import com.example.domain.model.airlinesModel.toResponseAirLineModel
 import com.example.domain.model.airlinesTicketModel.AirlineTicketModel
 import com.example.domain.model.airlinesTicketModel.CreateAirlineTicketModel
@@ -165,7 +166,7 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
             )
         )
         if(airlineTicketModel ==null && returnAirlineTicketModel == null && ticketModel.userId == userId){
-            val update = Updates.combine(
+            val update = combine(
                 Updates.set(
                     "departureCityId",
                     if (updateAirlineTicketModel.departureCityId.isNullOrBlank()) ticketModel.departureCityId else updateAirlineTicketModel.departureCityId
@@ -259,7 +260,7 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
                 )
 
                 val ticketModelRound = airLinesTickets.findOne(filterRound)
-                val updateRound = Updates.combine(
+                val updateRound = combine(
                     Updates.set(
                         "pricePerSeatRoundTrip",
                         updateAirlineTicketModel.pricePerSeatRoundTrip
@@ -297,12 +298,13 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
         val filter = Filters.eq("_id", ObjectId(ticketId))
         val ticketModel = airLinesTickets.findOne(filter)
         if(ticketModel?.isVisible!= visibility){
-            airLinesTickets.updateOne(filter, Updates.combine(
+            airLinesTickets.updateOne(filter, combine(
                 Updates.set(
                     "isVisible",
                     visibility
                 ),
-            ))
+            )
+            )
         }
     }
 
@@ -332,7 +334,7 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
           if(value2.modifiedCount > 0 || value.modifiedCount > 0){
               println()
           }
-          airLinesTickets.updateOne(filter, Updates.combine(
+          airLinesTickets.updateOne(filter, combine(
               Updates.set(
                   "departureTime",
                   departureTime
@@ -341,7 +343,8 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
                   "arrivalTime",
                   arrivalTime
               ),
-          ))
+          )
+          )
           sendGridDataSource.notifyMerchantsAboutTravelUpdate(userId, ticketId, departureTime ?: "", arrivalTime ?: "")
       }
     }
@@ -404,42 +407,43 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
         val hasNextPage = pageNumber < totalPages
 
         // Fetch tickets with pagination
-        val tickets = withContext(Dispatchers.IO) {
-            airLinesTickets.find(finalQuery)
-                .skip(skip)
-                .limit(pageSize)
-                .toList()
-        }
+        val tickets = airLinesTickets.find(finalQuery)
+            .skip(skip)
+            .limit(pageSize)
+            .toList()
 
         // Batch fetch related data
         val cityIds = tickets.mapNotNull { it.departureCityId } + tickets.mapNotNull { it.arrivalCityId }
-//        val airportIds = tickets.mapNotNull { it.departureAirportId } + tickets.mapNotNull { it.arrivalAirportId }
-//        val airlineIds = tickets.mapNotNull { it.airLineId }
+        val airportIds = tickets.mapNotNull { it.departureAirportId } + tickets.mapNotNull { it.arrivalAirportId }
+        val airlineIds = tickets.mapNotNull { it.airLineId }
 
         // Fetch related data in parallel
-        val cities = withContext(Dispatchers.IO) {
-            citiesdatabase.find(Filters.`in`("_id", cityIds.map(::ObjectId))).toList()
+        val (cities, airports, airlines) = coroutineScope {
+            val cityDeferred = async { citiesdatabase.find(Filters.`in`("_id", cityIds.map(::ObjectId))).toList() }
+            val airportDeferred = async { airPortsdatabase.find(Filters.`in`("_id", airportIds.map(::ObjectId))).toList() }
+            val airlineDeferred = async { airLinesdatabase.find(Filters.`in`("_id", airlineIds.map(::ObjectId))).toList() }
+            Triple(cityDeferred.await(), airportDeferred.await(), airlineDeferred.await())
         }
-
 
         // Map tickets to response models
         val data = tickets.map { ticket ->
             val departureCity = cities.find { it.id?.toHexString() == ticket.departureCityId }
             val arrivalCity = cities.find { it.id?.toHexString() == ticket.arrivalCityId }
-//            val departureAirport = airports.find { it.id?.toHexString() == ticket.departureAirportId }
-//            val arrivalAirport = airports.find { it.id?.toHexString() == ticket.arrivalAirportId }
-//            val airline = airlines.find { it.id?.toHexString() == ticket.airLineId }
+            val departureAirport = airports.find { it.id?.toHexString() == ticket.departureAirportId }
+            val arrivalAirport = airports.find { it.id?.toHexString() == ticket.arrivalAirportId }
+            val airline = airlines.find { it.id?.toHexString() == ticket.airLineId }
 
             ticket.toResponseAirlineTicketModel(
                 ticket.id?.toHexString() ?: "",
                 departureCity?.toResponseCityModel(xAppLanguageId, ""),
                 arrivalCity?.toResponseCityModel(xAppLanguageId, ""),
-                null,
-                null,
-                null,
-                null,
-                0,
-                0,
+                departureAirport?.toResponseAirPortModel(),
+                arrivalAirport?.toResponseAirPortModel(),
+                airline?.toResponseAirLineModel(),
+                airline?.toResponseAirLineModel(),
+                0,0
+//                getTotalNumberOfRoomsForUser(userId, ticket.id?.toHexString(), ticket.numberOfSeats ?: 0),
+//                getTotalNumberOfRoomsForUser(userId, ticket.id?.toHexString(), ticket.numberOfSeats ?: 0),
             )
         }
 
@@ -455,6 +459,86 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
         )
     }
 
+    override suspend fun getAirlineTicketDetailsById(
+        ticketId: String,
+        xAppLanguageId: Int
+    ): ApiResponse<ResponseAirlineTicketModel?>? = withContext(Dispatchers.IO) {
+        // Attempt to convert ticketId to ObjectId
+        val objectId = try {
+            ObjectId(ticketId)
+        } catch (e: IllegalArgumentException) {
+            // Return null if ticketId is not a valid ObjectId
+            return@withContext null
+        }
+
+        // Find the airline ticket by ID
+        val ticket = airLinesTickets.findOne(Filters.eq("_id", objectId)) ?: return@withContext null
+
+        // Initialize related data variables
+        val departureAirport = ticket.departureAirportId.let {
+            airPortsdatabase.findOne(Filters.eq("_id", ObjectId(it)))
+        }
+        val arrivalAirport = ticket.arrivalAirportId.let {
+            airPortsdatabase.findOne(Filters.eq("_id", ObjectId(it)))
+        }
+        val airline = ticket.airLineId.let {
+            airLinesdatabase.findOne(Filters.eq("_id", ObjectId(it)))
+        }
+        val returnAirline = ticket.roundTripId?.let {
+            airLinesdatabase.findOne(Filters.eq("_id", ObjectId(it)))
+        }
+
+        ApiResponse(
+            succeeded = true,
+            data = ticket.toResponseAirlineTicketModel(
+                _id = ticket.id?.toHexString() ?: "",
+                departureCity = null, // Update as needed
+                arrivalCity = null,   // Update as needed
+                departureAirport = departureAirport?.toResponseAirPortModel(),
+                arrivalAirport = arrivalAirport?.toResponseAirPortModel(),
+                numberOfSeatsLeft = 0,         // Update as needed
+                numberOfReturnSeatsLeft = 0,
+                airLine = airline?.toResponseAirLineModel(),
+                returnAirLine = returnAirline?.toResponseAirLineModel(),
+            ) ,
+            message = arrayListOf("Purchase failed due to insufficient stock"),
+            errorCode = errorCode
+        )
+    }
+
+
+    override suspend fun getNumberOfRemainingSeatsById(
+        ticketId: String,
+        userId: String,
+    ): ApiResponse<ResponseAirlineTicketModel?>? = withContext(Dispatchers.IO) {
+        // Attempt to convert ticketId to ObjectId
+        val objectId = try {
+            ObjectId(ticketId)
+        } catch (e: IllegalArgumentException) {
+            // Return null if ticketId is not a valid ObjectId
+            return@withContext null
+        }
+
+        // Find the airline ticket by ID
+        val ticket = airLinesTickets.findOne(Filters.eq("_id", objectId)) ?: return@withContext null
+
+        ApiResponse(
+            succeeded = true,
+            data = ticket.toResponseAirlineTicketModel(
+                _id = ticket.id?.toHexString() ?: "",
+                departureCity = null, // Update as needed
+                arrivalCity = null,   // Update as needed
+                departureAirport = null,
+                arrivalAirport = null,
+                airLine = null,
+                returnAirLine = null,
+                numberOfSeatsLeft =   getTotalNumberOfRoomsForUser(userId, ticket.id?.toHexString(), ticket.numberOfSeats ?: 0),
+                numberOfReturnSeatsLeft = getTotalNumberOfRoomsForUser(userId, ticket.id?.toHexString(), ticket.numberOfSeats ?: 0),
+            ) ,
+            message = arrayListOf("Purchase failed due to insufficient stock"),
+            errorCode = errorCode
+        )
+    }
 
     suspend fun getTotalNumberOfRoomsForUser(userId: String?,id: String?, totalRooms: Int): Int {
         // Create a query filter to find all documents with the matching userId under airLineModel
