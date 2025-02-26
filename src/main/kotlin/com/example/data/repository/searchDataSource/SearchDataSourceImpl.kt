@@ -388,7 +388,6 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
         val queryForItemFilter = mutableListOf<Bson>()
 
         queryForItemFilter.add(eq("isVisible", true))
-//        queryForItemFilter.add(gte("numberOfChildren", filterByChildrenTicketNumber ?: 0))
 
         if (filterByAdultsTicketNumber != null) {
             queryForItemFilter.add(gte("numberOfSeats", filterByAdultsTicketNumber))
@@ -443,9 +442,11 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
             }
         }
 
-        val finalQuery = if (queryForItemFilter.isNotEmpty()) and(queryForItemFilter) else Filters.empty()
+        val finalQuery =
+            if (queryForItemFilter.isNotEmpty()) and(queryForItemFilter) else Filters.empty()
         val sortCriteria = ascending("departureDate", "pricePerSeat")
-       val listOfAirlinesTickets =  airLinesTickets.find(finalQuery).sort(sortCriteria).skip(skip).limit(pageSize).toList()
+        val listOfAirlinesTickets =
+            airLinesTickets.find(finalQuery).sort(sortCriteria).skip(skip).limit(pageSize).toList()
 
 
         val filteredTickets = listOfAirlinesTickets.filter { ticket ->
@@ -463,27 +464,30 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
 
         val listOfLongs = mutableListOf<Long>()
         filteredTickets.map {
-             listOfLongs.add(dateStringToTimestamp(it.departureDate))
+            listOfLongs.add(dateStringToTimestamp(it.departureDate))
         }.toList()
         return PagingApiResponse(
             succeeded = true,
             data = filteredTickets.map { hotelTicketModel ->
                 hotelTicketModel.toResponseAirlineTicketModel(
                     hotelTicketModel.id?.toHexString() ?: "",
-                    departureCity = citiesdatabase.findOne(
-                        eq(
-                            "_id",
-                            ObjectId(hotelTicketModel.departureCityId)
-                        )
-                    )?.toResponseCityModel(xAppLanguageId, ""),
-                    arrivalCity = citiesdatabase.findOne(
-                        eq(
-                            "_id",
-                            ObjectId(hotelTicketModel.arrivalCityId)
-                        )
-                    )?.toResponseCityModel(xAppLanguageId, ""),
+                    departureCity = ResponseCityModel(
+                        id = hotelTicketModel.departureCityId,
+                        name = "",
+                        countryName = "",
+                        twoDigitCountryCode = "",
+                        threeDigitCountryCode = ""
+                    ),
+                    arrivalCity =
+                    ResponseCityModel(
+                        id = hotelTicketModel.arrivalCityId,
+                        name = "",
+                        countryName = "",
+                        twoDigitCountryCode = "",
+                        threeDigitCountryCode = ""
+                    ),
                     departureAirport = null,
-                    arrivalAirport =  null,
+                    arrivalAirport = null,
                     airLine = null,
                     returnAirLine = null
                 )
@@ -903,8 +907,6 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
     }
 
 
-
-
     override suspend fun getAllByCityNameAndHotelName(
         searchText: String,
         pageSize: Int,
@@ -920,15 +922,28 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
             // Search by city name (supports partial matches)
             query.add(
                 CityModel::profiles.elemMatch(
-                    CityProfileModel::name regex Regex(".*${Regex.escape(searchText)}.*", RegexOption.IGNORE_CASE)
+                    CityProfileModel::name regex Regex(
+                        ".*${Regex.escape(searchText)}.*",
+                        RegexOption.IGNORE_CASE
+                    )
                 )
             )
 
             // Search by two-digit country code
-            query.add(CityModel::twoDigitCountryCode regex Regex("^${Regex.escape(searchText)}$", RegexOption.IGNORE_CASE))
+            query.add(
+                CityModel::twoDigitCountryCode regex Regex(
+                    "^${Regex.escape(searchText)}$",
+                    RegexOption.IGNORE_CASE
+                )
+            )
 
             // Search by three-digit country code
-            query.add(CityModel::threeDigitCountryCode regex Regex("^${Regex.escape(searchText)}$", RegexOption.IGNORE_CASE))
+            query.add(
+                CityModel::threeDigitCountryCode regex Regex(
+                    "^${Regex.escape(searchText)}$",
+                    RegexOption.IGNORE_CASE
+                )
+            )
         }
 
         val finalQuery = or(query)
@@ -990,15 +1005,28 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
 
             query.add(
                 CityModel::profiles.elemMatch(
-                    CityProfileModel::name regex Regex(".*${Regex.escape(searchText)}.*", RegexOption.IGNORE_CASE)
+                    CityProfileModel::name regex Regex(
+                        ".*${Regex.escape(searchText)}.*",
+                        RegexOption.IGNORE_CASE
+                    )
                 )
             )
 
             // Search by two-digit country code
-            query.add(CityModel::twoDigitCountryCode regex Regex("^${Regex.escape(searchText)}$", RegexOption.IGNORE_CASE))
+            query.add(
+                CityModel::twoDigitCountryCode regex Regex(
+                    "^${Regex.escape(searchText)}$",
+                    RegexOption.IGNORE_CASE
+                )
+            )
 
             // Search by three-digit country code
-            query.add(CityModel::threeDigitCountryCode regex Regex("^${Regex.escape(searchText)}$", RegexOption.IGNORE_CASE))
+            query.add(
+                CityModel::threeDigitCountryCode regex Regex(
+                    "^${Regex.escape(searchText)}$",
+                    RegexOption.IGNORE_CASE
+                )
+            )
 
         }
 
@@ -1038,7 +1066,6 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
             errorCode = errorCode
         )
     }
-
 
 
     fun getDateAsTimestamp(timestamp: Long): Long {

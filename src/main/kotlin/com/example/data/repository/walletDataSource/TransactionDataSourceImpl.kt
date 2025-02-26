@@ -25,18 +25,20 @@ class TransactionDataSourceImpl(database: CoroutineDatabase) : TransactionDataSo
         transactionType: Int,
     ): ApiResponse<String?> {
         val walletAmounts = walletAmount.findOne(filter = WalletAmountModel::userId eq userId)
+
+
         if (walletAmounts == null) {
             walletAmount.insertOne(
                 document = WalletAmountModel(
                     userId = userId,
-                    amount = amount + blockToBookFees
+                    amount = if (amount == 0.0)  amount else (amount + blockToBookFees)
                 )
             )
         } else {
             val filter = WalletAmountModel::userId eq userId
             val update = Updates.combine(
                 Updates.set(
-                    "amount", (amount + blockToBookFees) + walletAmounts.amount
+                    "amount", if (amount == 0.0)  amount else ( (amount + blockToBookFees) + walletAmounts.amount)
                 )
             )
             walletAmount.updateOne(
