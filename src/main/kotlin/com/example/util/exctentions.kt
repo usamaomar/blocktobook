@@ -37,7 +37,13 @@ fun addOneYear() : Long {
     val newTimeInMillis = calendar.timeInMillis
     return  newTimeInMillis;
 }
-
+fun addForeYear() : Long {
+    val calendar = Calendar.getInstance()
+    calendar.timeInMillis = System.currentTimeMillis()
+    calendar.add(Calendar.YEAR, 4)
+    val newTimeInMillis = calendar.timeInMillis
+    return  newTimeInMillis;
+}
 inline fun <reified T : Any, reified R : Any> T.convertTo(): R {
     val sourceProperties = T::class.memberProperties.associateBy { it.name }
     val targetConstructor = R::class.primaryConstructor!!

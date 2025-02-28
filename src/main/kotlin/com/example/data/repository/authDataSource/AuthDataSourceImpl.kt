@@ -19,6 +19,8 @@ import com.example.util.Constants.AUDIENCE
 import com.example.util.Constants.ISSUER
 import com.example.util.Constants.LOG_OU
 import com.example.util.SubscriptionType
+import com.example.util.addForeYear
+import com.example.util.addOneMoth
 import com.example.util.isNullOrBlank
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier
@@ -111,7 +113,8 @@ class AuthDataSourceImpl(database: CoroutineDatabase) : AuthDataSource {
                 id = "",
                 name = createEmailModel.name,
                 emailAddress = createEmailModel.email,
-                accessRole = AccessRole.Merchant, profilePhoto = "")
+                accessRole = AccessRole.Merchant, profilePhoto = ""
+            )
             val insertResult = users.insertOne(document = user)
             val insertedId = insertResult.insertedId?.asObjectId()?.value?.toString()
             val update = Updates.combine(
@@ -120,8 +123,8 @@ class AuthDataSourceImpl(database: CoroutineDatabase) : AuthDataSource {
                     insertedId
                 )
             )
-         users.updateOne(User::emailAddress eq createEmailModel.email, update)
-         existingUser = users.findOne(filter = User::emailAddress eq createEmailModel.email)
+            users.updateOne(User::emailAddress eq createEmailModel.email, update)
+            existingUser = users.findOne(filter = User::emailAddress eq createEmailModel.email)
         }
         val accessToken = generateAccessToken(
             userId = existingUser?.id ?: "",
@@ -147,7 +150,10 @@ class AuthDataSourceImpl(database: CoroutineDatabase) : AuthDataSource {
                 data = ResponseTokenModel(token = accessToken, refreshToken = refreshToken),
                 errorCode = errorCode
             ),
-            "UserSession" to UserSession(id = existingUser?.id ?: "", name = existingUser?.name ?: "")
+            "UserSession" to UserSession(
+                id = existingUser?.id ?: "",
+                name = existingUser?.name ?: ""
+            )
         )
     }
 
@@ -158,9 +164,15 @@ class AuthDataSourceImpl(database: CoroutineDatabase) : AuthDataSource {
                 id = createEmailModel.uid,
                 name = createEmailModel.name,
                 emailAddress = createEmailModel.email,
-                accessRole = AccessRole.Merchant, profilePhoto = "")
-         users.insertOne(document = user)
-         existingUser = users.findOne(filter = User::emailAddress eq createEmailModel.email)
+                accessRole = AccessRole.Merchant, profilePhoto = "",subscription = Subscription(
+                    0,//SubscriptionType.Free
+                    System.currentTimeMillis(),
+                    addForeYear(),
+                    System.currentTimeMillis()
+                )
+            )
+            users.insertOne(document = user)
+            existingUser = users.findOne(filter = User::emailAddress eq createEmailModel.email)
         }
         val accessToken = generateAccessToken(
             userId = existingUser?.id ?: "",
@@ -186,11 +198,14 @@ class AuthDataSourceImpl(database: CoroutineDatabase) : AuthDataSource {
                 data = ResponseTokenModel(token = accessToken, refreshToken = refreshToken),
                 errorCode = errorCode
             ),
-            "UserSession" to UserSession(id = existingUser?.id ?: "", name = existingUser?.name ?: "")
+            "UserSession" to UserSession(
+                id = existingUser?.id ?: "",
+                name = existingUser?.name ?: ""
+            )
         )
     }
 
-    override suspend fun createEmailMerchant(createEmailModel: CreateEmailModel): Map<String, Any>  {
+    override suspend fun createEmailMerchant(createEmailModel: CreateEmailModel): Map<String, Any> {
         val existingUser = users.findOne(filter = User::emailAddress eq createEmailModel.email)
         if (existingUser == null) {
             val userRecord = FirebaseAuth.getInstance().createUser(
@@ -244,7 +259,8 @@ class AuthDataSourceImpl(database: CoroutineDatabase) : AuthDataSource {
             )
         }
     }
-    override suspend fun createEmailAdmin(createEmailModel: CreateEmailModel): Map<String, Any>  {
+
+    override suspend fun createEmailAdmin(createEmailModel: CreateEmailModel): Map<String, Any> {
         var existingUser = users.findOne(filter = User::emailAddress eq createEmailModel.email)
         if (existingUser == null) {
             val user = User(
@@ -252,7 +268,15 @@ class AuthDataSourceImpl(database: CoroutineDatabase) : AuthDataSource {
                 name = createEmailModel.name,
                 emailAddress = createEmailModel.email,
                 accessRole = AccessRole.Admin, profilePhoto = "",
-                companyInfo = CompanyInfoModel(name = "admin", phoneNumber = "0779350932", facilityNumber = "admin", tourismLicense = "admin", commercialRegister = "admin", isCompanyInfoVerified = true, blockToBookFees = 0.0)
+                companyInfo = CompanyInfoModel(
+                    name = "admin",
+                    phoneNumber = "0779350932",
+                    facilityNumber = "admin",
+                    tourismLicense = "admin",
+                    commercialRegister = "admin",
+                    isCompanyInfoVerified = true,
+                    blockToBookFees = 0.0
+                )
             )
             users.insertOne(document = user)
             existingUser = users.findOne(filter = User::emailAddress eq createEmailModel.email)
@@ -281,7 +305,10 @@ class AuthDataSourceImpl(database: CoroutineDatabase) : AuthDataSource {
                 data = ResponseTokenModel(token = accessToken, refreshToken = refreshToken),
                 errorCode = errorCode
             ),
-            "UserSession" to UserSession(id = existingUser?.id ?: "", name = existingUser?.name ?: "")
+            "UserSession" to UserSession(
+                id = existingUser?.id ?: "",
+                name = existingUser?.name ?: ""
+            )
         )
     }
 
@@ -353,7 +380,7 @@ class AuthDataSourceImpl(database: CoroutineDatabase) : AuthDataSource {
     }
 
     override suspend fun getTest(): String? {
-         return "Usama Last uok"
+        return "Usama Last uok"
     }
 
     private fun generateAccessToken(
