@@ -37,6 +37,7 @@ import org.litote.kmongo.eq
 import org.litote.kmongo.regex
 import org.litote.kmongo.setValue
 import java.security.SecureRandom
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.random.asKotlinRandom
 
 class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDataSource {
@@ -540,25 +541,28 @@ class AirLineTicketDataSourceImpl(database: CoroutineDatabase) : AirLineTicketDa
         )
     }
 
-    suspend fun getTotalNumberOfRoomsForUser(userId: String?,id: String?, totalRooms: Int): Int {
-        // Create a query filter to find all documents with the matching userId under airLineModel
-        val queryForItemFilter = mutableListOf<Bson>()
-        queryForItemFilter.add(Filters.eq("airLineModel.userId", userId))
-        queryForItemFilter.add(Filters.eq("airLineModel.id", id))
+    private suspend fun getTotalNumberOfRoomsForUser(userId: String?, id: String?, totalRooms: Int): Int =
+        withContext(Dispatchers.IO) {
+            try {
+                val queryForItemFilter = mutableListOf<Bson>().apply {
+                    add(Filters.eq("airLineModel.userId", userId))
+                    add(Filters.eq("airLineModel.id", id))
+                }
 
-        // Combine all filters into one final query
-        val finalQuery = and(queryForItemFilter)
+                val finalQuery = and(queryForItemFilter)
+                val documents = purchaseModel.find(finalQuery).toList()
 
-        // Fetch the documents that match the query
-        val documents = purchaseModel.find(finalQuery).toList()
+                val totalPurchased = documents.sumOf { it.numberOfRooms }
+                val totalTwo = getTotalNumberOfRetrunRoomsForUser(userId, id, totalRooms)
 
-        // Sum the numberOfRooms field from all matching documents
-        val totalPurchased  = documents.sumOf { it.numberOfRooms }
-
-        val totalTwo = getTotalNumberOfRetrunRoomsForUser(userId, id, totalRooms)
-
-        return  totalRooms - (totalTwo + totalPurchased)
-    }
+                return@withContext totalRooms - (totalTwo + totalPurchased)
+            } catch (e: CancellationException) {
+                throw e // Propagate coroutine cancellation
+            } catch (e: Exception) {
+                e.printStackTrace()
+                return@withContext totalRooms // Return a fallback value
+            }
+        }
 
     suspend fun getTotalNumberOfRetrunRoomsForUser(userId: String?,id: String?, totalRooms: Int): Int {
         // Create a query filter to find all documents with the matching userId under airLineModel

@@ -321,6 +321,10 @@ object Api {
                 get() = "${Search.path}/GetAllMonthFlightTicketsFiltration"
         }
 
+        object GetReturnTicketDate : ApiPath {
+            override val path: String
+                get() = "${Search.path}/GetReturnTicketDate"
+        }
 
     }
 

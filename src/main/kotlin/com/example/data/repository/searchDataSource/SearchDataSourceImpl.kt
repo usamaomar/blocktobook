@@ -39,6 +39,8 @@ import com.mongodb.client.model.Filters.not
 import com.mongodb.client.model.Filters.regex
 import com.mongodb.client.model.Sorts
 import com.mongodb.client.model.Sorts.ascending
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.bson.BsonDocument
 import org.bson.conversions.Bson
 import org.bson.types.ObjectId
@@ -495,6 +497,24 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
             errorCode = null
         )
     }
+
+    override suspend fun getReturnTicketDate(
+        returnTicketId: String
+    ): ApiResponse<String?> = withContext(Dispatchers.IO){
+        val listOfAirlinesTickets =
+            airLinesTickets.find(eq("roundTripId", returnTicketId)).toList()
+          ApiResponse(
+            succeeded = true,
+            data = getLatestAirlineTicket(listOfAirlinesTickets)?.departureDate,
+            errorCode = null
+        )
+    }
+    private suspend fun getLatestAirlineTicket(tickets: List<AirlineTicketModel>): AirlineTicketModel? =
+        withContext(Dispatchers.IO) {
+            val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
+            return@withContext tickets.maxByOrNull { LocalDate.parse(it.departureDate, formatter) }
+        }
+
 
     fun dateStringToTimestamp(dateString: String): Long {
         // Define the formatter to match the input date format

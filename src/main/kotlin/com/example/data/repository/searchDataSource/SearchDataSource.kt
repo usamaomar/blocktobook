@@ -71,6 +71,12 @@ interface SearchDataSource {
 
 
 
+    suspend fun getReturnTicketDate(
+        returnTicketId: String
+    ): ApiResponse<String?>?
+
+
+
     suspend fun getAllByCityNameAndHotelName(searchText: String,
                        pageSize: Int,
                        pageNumber: Int,

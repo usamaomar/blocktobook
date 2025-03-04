@@ -215,4 +215,28 @@ fun Route.searchRout() {
             )
         }
     }
+
+
+    get(Api.Search.GetReturnTicketDate.path) {
+        try {
+            val pagingApiResponse = searchDataSource.getReturnTicketDate(
+                returnTicketId = call.parameters[paramNames.Id].toSafeString() ?: ""
+            )
+            call.respond(
+                message = pagingApiResponse ?:  ApiResponse(
+                    succeeded = false,
+                    message = arrayListOf("Something went wrong"),
+                    data = null, errorCode = errorCode
+                )
+            )
+        } catch (e: Exception) {
+            call.respond(
+                message = ApiResponse(
+                    succeeded = false,
+                    message = arrayListOf(e.message.toString(),e.cause?.message.toString()),
+                    data = null, errorCode = errorCode
+                ), status = HttpStatusCode.ExpectationFailed
+            )
+        }
+    }
 }
