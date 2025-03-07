@@ -458,10 +458,37 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
             ).toList() // Convert the result to a list
 
             val totalPurchasedSeats = matchingPurchases.sumOf { it.numberOfRooms ?: 0 }
-            val availableSeats = (ticket.numberOfSeats ?: 0) - totalPurchasedSeats
 
-            // Return true if there are enough available seats
+            val matchingPurchasesReturnAirLineModel = purchaseModel.find(
+                eq(
+                    "returnAirLineModel.id",
+                    ticket.id?.toHexString()
+                ) // Ensure this matches your schema
+            ).toList() // Convert the result to a list
+
+            val totalPurchasedSeatsReturnAirLineModel =
+                matchingPurchasesReturnAirLineModel.sumOf { it.numberOfRooms ?: 0 }
+
+            var availableSeats = 0
+
+            if ((ticket.numberOfSeats
+                    ?: 0) - (totalPurchasedSeats + totalPurchasedSeatsReturnAirLineModel) < 0
+            ) {
+
+
+                availableSeats = (ticket.numberOfSeats
+                    ?: 0) - (totalPurchasedSeats + totalPurchasedSeatsReturnAirLineModel)
+
+            } else {
+                availableSeats = (ticket.numberOfSeats
+                    ?: 0) - (totalPurchasedSeats + totalPurchasedSeatsReturnAirLineModel)
+
+
+            }
+
             availableSeats >= (filterByAdultsTicketNumber ?: 1)
+            // Return true if there are enough available seats
+
         }
 
         val listOfLongs = mutableListOf<Long>()
@@ -500,15 +527,16 @@ class SearchDataSourceImpl(database: CoroutineDatabase) : SearchDataSource {
 
     override suspend fun getReturnTicketDate(
         returnTicketId: String
-    ): ApiResponse<String?> = withContext(Dispatchers.IO){
+    ): ApiResponse<String?> = withContext(Dispatchers.IO) {
         val listOfAirlinesTickets =
             airLinesTickets.find(eq("roundTripId", returnTicketId)).toList()
-          ApiResponse(
+        ApiResponse(
             succeeded = true,
             data = getLatestAirlineTicket(listOfAirlinesTickets)?.departureDate,
             errorCode = null
         )
     }
+
     private suspend fun getLatestAirlineTicket(tickets: List<AirlineTicketModel>): AirlineTicketModel? =
         withContext(Dispatchers.IO) {
             val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")

@@ -209,7 +209,7 @@ fun Route.airLineTicketRout() {
                 userId = userId,
             )
             call.respond(
-                message = pagingApiResponse ?: PagingApiResponse(
+                message = pagingApiResponse ?: ApiResponse(
                     succeeded = false,
                     message = arrayListOf("Something went wrong"),
                     data = null, errorCode = errorCode
