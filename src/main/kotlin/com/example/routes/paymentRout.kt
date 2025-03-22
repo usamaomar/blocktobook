@@ -9,13 +9,24 @@ import com.example.data.repository.userDataSource.UserDataSource
 import com.example.data.repository.walletDataSource.TransactionDataSource
 import com.example.domain.model.payment.CreatePaymentIncludeAmount
 import com.example.domain.model.payment.CreatePaymentModel
+import com.example.domain.model.payment.PaymentResponse
 import com.example.domain.model.publicModel.ApiResponse
 import com.example.endPoints.Api
 import com.example.plugins.decodeJwtPayload
+import com.example.util.Constants.secretKey
 import com.example.util.receiveModel
 import com.example.util.toSafeDouble
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.httpPost
+import com.stripe.Stripe
+import com.stripe.model.PaymentIntent
+import com.stripe.model.Price
+import com.stripe.model.Product
+import com.stripe.model.checkout.Session
+import com.stripe.param.PaymentIntentCreateParams
+import com.stripe.param.PriceCreateParams
+import com.stripe.param.ProductCreateParams
+import com.stripe.param.checkout.SessionCreateParams
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.http.HttpStatusCode
@@ -26,6 +37,7 @@ import io.ktor.server.routing.post
 import io.ktor.util.InternalAPI
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
@@ -56,9 +68,6 @@ fun Route.paymentRout() {
             val request = call.receiveModel<CreatePaymentIncludeAmount>()
             val decodedPayload = decodeJwtPayload(authorization ?: "")
             val userId = decodedPayload["userId"] ?: ""
-            val paymentUrl = "https://eu-test.oppwa.com/v1/checkouts"
-            val authorizationBearer =
-                "Bearer OGE4Mjk0MTc0ZDA1OTViYjAxNGQwNWQ4MjllNzAxZDF8OVRuSlBjMm45aA=="
             val result = withContext(Dispatchers.IO) {
                 val amounts: String = if (request.includeAmount) {
                     cartDataSource.getAmountWithCurrentWalletAmountWithBlockFees(
@@ -69,23 +78,98 @@ fun Route.paymentRout() {
                 } else {
                     cartDataSource.getAmountWithBlockFees(userId)
                 }
-                val parameters = mutableListOf(
-                    "entityId" to "8a8294174d0595bb014d05d829cb01cd",
-                    "currency" to "USD",
-                    "paymentType" to "DB",
-                    "integrity" to "true",
-                    "amount" to amounts,
-                )
-                paymentUrl.httpPost(parameters)
-                    .header("Authorization" to authorizationBearer)
-                    .header("Content-Type" to "application/x-www-form-urlencoded")
-                    .responseString()
+
+                Stripe.apiKey = secretKey
+
+                val params = PaymentIntentCreateParams.builder()
+                    .setAmount((amounts.toDouble() * 100).toLong())
+                    .setCurrency("usd")
+                    .build()
+
+                return@withContext PaymentIntent.create(params)
             }
             call.respond(
                 message = ApiResponse(
                     succeeded = true,
                     message = arrayListOf("paymentRedirectUrl"),
-                    data = result.third.get(), errorCode = errorCode
+                    data = PaymentResponse(clientSecret = result.clientSecret, id = result.id) , errorCode = errorCode
+                )
+            )
+        } catch (e: Exception) {
+            call.respond(
+                message = ApiResponse(
+                    succeeded = false,
+                    message = arrayListOf(e.message.toString(), e.cause?.message.toString()),
+                    data = null, errorCode = errorCode
+                ), status = HttpStatusCode.ExpectationFailed
+            )
+        }
+    }
+
+    post(Api.Payment.CreateCartCheckoutWeb.path) {
+        try {
+            val authorization = call.request.headers["Authorization"]
+            val request = call.receiveModel<CreatePaymentIncludeAmount>()
+            val decodedPayload = decodeJwtPayload(authorization ?: "")
+            val userId = decodedPayload["userId"] ?: ""
+            val result = withContext(Dispatchers.IO) {
+                val amounts: String = if (request.includeAmount) {
+                    cartDataSource.getAmountWithCurrentWalletAmountWithBlockFees(
+                        userId,
+                        transactionDataSource.getWalletAmountByUserId(userId)?.data.toSafeDouble()
+                            ?: 0.0
+                    )
+                } else {
+                    cartDataSource.getAmountWithBlockFees(userId)
+                }
+
+                Stripe.apiKey = secretKey
+
+                val YOUR_DOMAIN = "http://localhost:49518"
+
+                val productName = userId
+                val productDescription = "Product"
+
+                val productParams = ProductCreateParams.builder()
+                    .setName(productName)
+                    .setDescription(productDescription)
+                    .build()
+
+                val product = Product.create(productParams)
+
+
+
+                val priceParams = PriceCreateParams.builder()
+                    .setProduct(product.id)
+                    .setCurrency("usd")
+                    .setUnitAmount((amounts.toDouble() * 100).toLong()) // Stripe uses cents
+                    .build()
+                val price = Price.create(priceParams)
+
+                // Stripe session parameters
+                val params = SessionCreateParams.builder()
+                    .setMode(SessionCreateParams.Mode.PAYMENT)
+                    .setSuccessUrl("$YOUR_DOMAIN/successPage")
+                    .setCancelUrl("$YOUR_DOMAIN/cancelPage")
+                    .addLineItem(
+                        SessionCreateParams.LineItem.builder()
+                            .setPrice(price.id)
+                            .setQuantity(1)
+                            .build()
+                    )
+                    .build()
+
+                // Create Stripe Checkout Session
+                val session = Session.create(params)
+
+                // Respond with session URL
+                return@withContext session
+            }
+            call.respond(
+                message = ApiResponse(
+                    succeeded = true,
+                    message = arrayListOf("paymentRedirectUrl"),
+                    data = PaymentResponse(clientSecret = result.url, id = result.id) , errorCode = errorCode
                 )
             )
         } catch (e: Exception) {
@@ -156,20 +240,16 @@ fun Route.paymentRout() {
             val authorization = call.request.headers["Authorization"]
             val decodedPayload = decodeJwtPayload(authorization ?: "")
             val userId = decodedPayload["userId"] ?: ""
-            val paymentUrl = "https://eu-test.oppwa.com${request.resourcePath}"
-            val authorizationBearer =
-                "Bearer OGE4Mjk0MTc0ZDA1OTViYjAxNGQwNWQ4MjllNzAxZDF8OVRuSlBjMm45aA=="
+            val paymentUrl = "https://api.stripe.com/v1/payment_intents/${request.id}"
+            val authorizationBearer = "Bearer $secretKey"
             val result = withContext(Dispatchers.IO) {
-                val parameters = mutableListOf(
-                    "entityId" to "8a8294174d0595bb014d05d829cb01cd"
-                )
-                paymentUrl.httpGet(parameters)
+                paymentUrl.httpGet()
                     .header("Authorization" to authorizationBearer)
                     .header("Content-Type" to "application/x-www-form-urlencoded")
                     .responseString()
             }
-//            val statsCode = extractCode(result.third.get())
-//            if (statsCode == "800.100.156") {
+            val statsCode = extractCode(result.third.get())
+            if (statsCode == "succeeded") {
                 val amounts: String = if (request.includeAmount == true) {
                     cartDataSource.getAmountWithCurrentWalletAmountWithBlockFees(
                         userId,
@@ -193,7 +273,7 @@ fun Route.paymentRout() {
                             message = ApiResponse(
                                 succeeded = true,
                                 message = arrayListOf("paymentRedirectUrl"),
-                                data = "result.third.get()", errorCode = errorCode
+                                data = result.third.get(), errorCode = errorCode
                             )
                         )
                     } else {
@@ -201,21 +281,19 @@ fun Route.paymentRout() {
                             message = ApiResponse(
                                 succeeded = false,
                                 message = arrayListOf("paymentRedirectUrl"),
-                                data = "result.third.get()", errorCode = errorCode
+                                data = result.third.get(), errorCode = errorCode
                             )
                         )
                     }
-
-
-//                } else {
-//                    call.respond(
-//                        message = ApiResponse(
-//                            succeeded = false,
-//                            message = arrayListOf("paymentRedirectUrl"),
-//                            data = result.third.get(), errorCode = errorCode
-//                        )
-//                    )
-//                }
+                } else {
+                    call.respond(
+                        message = ApiResponse(
+                            succeeded = false,
+                            message = arrayListOf("paymentRedirectUrl"),
+                            data = result.third.get(), errorCode = errorCode
+                        )
+                    )
+                }
             } else {
                 call.respond(
                     message = ApiResponse(
@@ -316,8 +394,7 @@ fun extractCode(jsonString: String): String? {
     val jsonElement = Json.parseToJsonElement(jsonString)
 
     // Extract the "code" field from the "result" object
-    val code = jsonElement.jsonObject["result"]
-        ?.jsonObject?.get("code")
+    val code = jsonElement.jsonObject["status"]
         ?.jsonPrimitive?.content
 
     return code

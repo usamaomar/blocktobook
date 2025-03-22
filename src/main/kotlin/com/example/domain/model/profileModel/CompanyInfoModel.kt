@@ -11,6 +11,7 @@ data class CompanyInfoModel(
     val commercialRegister: String? = null,
     val companyLogo: String? = null,
     val isCompanyInfoVerified: Boolean,
+    val canCreateTrip: Boolean? = null,
     val blockToBookFees: Double,
     val createdAt: Long? = 0
 )

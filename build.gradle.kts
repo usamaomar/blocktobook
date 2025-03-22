@@ -97,6 +97,11 @@ dependencies {
     implementation("com.sendgrid:sendgrid-java:4.9.3") // or the latest version
 
     implementation("io.ktor:ktor-server-cio:$ktorVersion")
+    //stripe
+    implementation("io.ktor:ktor-server-core:2.3.0")
+    implementation("io.ktor:ktor-server-netty:2.3.0")
+    implementation("io.ktor:ktor-client-core:2.3.0")
+    implementation("com.stripe:stripe-java:24.0.0")
 
 
 }

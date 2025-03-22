@@ -365,6 +365,11 @@ object Api {
 
 
 
+        object CreateCartCheckoutWeb : ApiPath {
+            override val path: String
+                get() = "${Payment.path}/CreateCartCheckoutWeb"
+        }
+
         object CreateCartCheckout : ApiPath {
             override val path: String
                 get() = "${Payment.path}/CreateCartCheckout"

@@ -151,7 +151,8 @@ fun Route.profileRout() {
                     decodedPayload["userId"] ?: "",
                     request.toCompanyInfoModelUser(
                         blockToBookFees = 10.0,
-                        isCompanyInfoVerified = false
+                        isCompanyInfoVerified = false,
+                        canCreateTrip = false,
                     )
                 )
             val formattedMessage = """

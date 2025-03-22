@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 data class VerifiedCompanyInfoModel(
     val userId: String,
     val isCompanyInfoVerified: Boolean,
+    val canCreateTrip: Boolean? = null,
 ) : Principal
 
 

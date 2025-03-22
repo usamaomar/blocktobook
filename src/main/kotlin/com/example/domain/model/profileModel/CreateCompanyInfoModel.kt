@@ -12,7 +12,7 @@ data class CreateCompanyInfoModel(
     val createdAt: Long? = 0
 )
 
-fun CreateCompanyInfoModel.toCompanyInfoModelUser(blockToBookFees: Double ,isCompanyInfoVerified: Boolean): CompanyInfoModel {
+fun CreateCompanyInfoModel.toCompanyInfoModelUser(blockToBookFees: Double ,isCompanyInfoVerified: Boolean,canCreateTrip: Boolean): CompanyInfoModel {
     return CompanyInfoModel(
         name = name,
         phoneNumber = phoneNumber,
@@ -20,6 +20,7 @@ fun CreateCompanyInfoModel.toCompanyInfoModelUser(blockToBookFees: Double ,isCom
         tourismLicense = tourismLicense,
         commercialRegister = commercialRegister,
         isCompanyInfoVerified = isCompanyInfoVerified,
+        canCreateTrip = canCreateTrip,
         blockToBookFees = blockToBookFees,
         createdAt = createdAt
     )

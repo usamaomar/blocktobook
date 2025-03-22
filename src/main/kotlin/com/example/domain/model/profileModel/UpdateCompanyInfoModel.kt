@@ -12,6 +12,7 @@ data class UpdateCompanyInfoModel(
     val tourismLicense: String? = null,
     val commercialRegister: String? = null,
     val isCompanyInfoVerified: Boolean,
+    val canCreateTrip: Boolean? = null,
     val blockToBookFees: Double,
     val createdAt: Long? = 0
 ) : Principal
@@ -25,6 +26,7 @@ fun UpdateCompanyInfoModel.toCompanyInfoModel(): CompanyInfoModel {
         tourismLicense = tourismLicense,
         commercialRegister = commercialRegister,
         isCompanyInfoVerified = isCompanyInfoVerified,
+        canCreateTrip = canCreateTrip,
         blockToBookFees = blockToBookFees,
         createdAt = createdAt
     )
@@ -39,6 +41,7 @@ fun UpdateCompanyInfoModel.toCompanyInfoModelUser(blockToBookFees: Double ,isCom
         tourismLicense = tourismLicense,
         commercialRegister = commercialRegister,
         isCompanyInfoVerified = isCompanyInfoVerified,
+        canCreateTrip = canCreateTrip,
         blockToBookFees = blockToBookFees,
         createdAt = createdAt
     )

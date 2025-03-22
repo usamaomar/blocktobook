@@ -5,7 +5,7 @@ object Constants {
     const val ISSUER = "https//accounts.google.com"
     const val DATABASE_TEST = "database"
     const val DATABASE_NAME = "BLOCKTOBOOK"
-//    const val DATABASE_NAME = "cluster0.yew7v.mongodb.net"
+    const val secretKey = "sk_test_51LxdBXKAg8MlzCyvzU19DLIjdJMrY3zTOg1wsUeoD9ozMlKWJyQRnZEjjaRPz3Yu8jf3JFWyK866cA92Xqc3x95P00sMxZMsMt"
     const val COMPANY_INFO_NOT_FOUND = 2
     const val COMPANY_INFO_NOT_VERIFIED = 29
     const val SUBSCRIPTION_NOT_FOUND = 4
