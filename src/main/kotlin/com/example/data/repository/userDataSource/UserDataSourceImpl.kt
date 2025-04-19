@@ -158,8 +158,8 @@ class UserDataSourceImpl(database: CoroutineDatabase) : UserDataSource {
     ): PagingApiResponse<List<User>?> {
         val skip = (pageNumber - 1) * pageSize
         val query = or(
-            User::name regex searchText, // Search by user name (partial match)
-            User::emailAddress regex searchText, // Search by email (partial match)
+//            User::name regex searchText, // Search by user name (partial match)
+//            User::emailAddress regex searchText, // Search by email (partial match)
             User::companyInfo / CompanyInfoModel::name regex searchText, // Search by company name
             User::companyInfo / CompanyInfoModel::facilityNumber regex searchText // Search by facility number
         )

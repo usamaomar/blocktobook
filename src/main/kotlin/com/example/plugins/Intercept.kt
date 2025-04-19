@@ -123,10 +123,10 @@ fun Application.intercept() {
                     }
 
                     // Ensure subscription is valid and not expired
-                    if (userModel.subscription == null) {
-                        call.respondUnauthorized("Subscription Not Found", SUBSCRIPTION_NOT_FOUND)
-                        return@intercept
-                    }
+//                    if (userModel.subscription == null) {
+//                        call.respondUnauthorized("Subscription Not Found", SUBSCRIPTION_NOT_FOUND)
+//                        return@intercept
+//                    }
 
 //
 //                    if (userModel.subscription.expirationDate!! < System.currentTimeMillis()) {
