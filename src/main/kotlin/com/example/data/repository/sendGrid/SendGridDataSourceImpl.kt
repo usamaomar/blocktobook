@@ -143,10 +143,10 @@ class SendGridDataSourceImpl(database: CoroutineDatabase) : SendGridDataSource {
 //                            errorCode = errorCode
 //                        )
 //                    }
-//                sendToWhatsapp(
-//                    toNumber = "+962779350932",
-//                    contentVariables = "This is the ship that made the Kessel Run in fourteen parsecs?"
-//                )
+                sendToWhatsapp(
+                    toNumber = "+962779350932",
+                    contentVariables = "Ticket is Purchased successfully"
+                )
                 ApiResponse(
                     data = null,
                     succeeded = false,
