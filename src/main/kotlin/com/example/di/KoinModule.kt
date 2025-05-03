@@ -38,6 +38,7 @@ import com.example.data.repository.userDataSource.UserDataSourceImpl
 import com.example.data.repository.userDataSource.UserDataSource
 import com.example.data.repository.walletDataSource.TransactionDataSource
 import com.example.data.repository.walletDataSource.TransactionDataSourceImpl
+import com.example.util.Constants.DATABASE_NAME
 import com.example.util.Constants.DATABASE_TEST
 import org.koin.dsl.module
 import org.litote.kmongo.coroutine.coroutine
@@ -48,9 +49,9 @@ val koinModule = module {
 
     single {
 //         if (System.getenv("APP_ENV") == "test") {
-         KMongo.createClient().coroutine.getDatabase(DATABASE_TEST) // Local test database
+//         KMongo.createClient().coroutine.getDatabase(DATABASE_TEST) // Local test database
 //        } else {
-//          KMongo.createClient(System.getenv("MONGODB_URI")).coroutine.getDatabase(DATABASE_NAME) // Production database
+          KMongo.createClient(System.getenv("MONGODB_URI")).coroutine.getDatabase(DATABASE_NAME) // Production database
 //      val database =   KMongo.createClient(System.getenv("MONGODB_URI")).coroutine.getDatabase(DATABASE_NAME) // Production database
 //        }
 
