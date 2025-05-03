@@ -157,14 +157,14 @@ class PurchaseDataSourceImpl(database: CoroutineDatabase) : PurchaseDataSource {
 
                 val totalReturnSeatsAvailable = returnAirlineTicketModel.sumOf { it.numberOfRooms }
 
-                val returnNumberOfAllSeats = (cartModel.airLineModel.numberOfSeats ?: 0)
-                val returnFinalTotal = (returnNumberOfAllSeats - totalReturnSeatsAvailable)
-
-                if (totalReturnSeatsAvailable != 0) {
-                    if (cartModel.numberOfRooms > returnFinalTotal) {
-                        throw IllegalArgumentException("Error: Not enough seats available for the requested number.")
-                    }
-                }
+//                val returnNumberOfAllSeats = (cartModel.airLineModel.numberOfSeats ?: 0)
+//                val returnFinalTotal = (returnNumberOfAllSeats - totalReturnSeatsAvailable)
+//
+//                if (totalReturnSeatsAvailable != 0) {
+//                    if (cartModel.numberOfRooms > returnFinalTotal) {
+//                        throw IllegalArgumentException("Error: Not enough seats available for the requested number.")
+//                    }
+//                }
             }
         }
 
@@ -203,7 +203,7 @@ class PurchaseDataSourceImpl(database: CoroutineDatabase) : PurchaseDataSource {
         val updatedBuyerWalletAmount = currentWalletAmount1 - blockToBookFees
         updateBuyerWallet(userId, updatedBuyerWalletAmount, blockToBookFees, checkoutId)
 
-        return ApiResponse(data = "Success", succeeded = true, errorCode = errorCode)
+        return ApiResponse(data = checkoutId, succeeded = true, errorCode = errorCode)
     }
 
     override suspend fun createIndex() {

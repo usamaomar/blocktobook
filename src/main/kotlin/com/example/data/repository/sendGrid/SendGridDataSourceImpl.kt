@@ -1,11 +1,14 @@
 package com.example.data.repository.sendGrid
 
 import com.example.data.repository.sendGridKey.SendGridKeyDataSource
-import com.example.domain.model.airlinesTicketModel.AirlineTicketModel
 import com.example.domain.model.publicModel.ApiResponse
 import com.example.domain.model.purchaseModel.PurchaseModel
+import com.example.domain.model.transactionModel.TransactionModel
 import com.example.domain.model.userModel.User
 import com.example.util.AccessRole
+import com.example.util.Constants.ADMIN_EMAIL
+import com.example.util.Constants.getTwilioAccountSid
+import com.example.util.Constants.getTwilioAuthToken
 import com.mongodb.client.model.Filters
 import com.sendgrid.Method
 import com.sendgrid.Request
@@ -14,23 +17,25 @@ import com.sendgrid.helpers.mail.Mail
 import com.sendgrid.helpers.mail.objects.Content
 import com.sendgrid.helpers.mail.objects.Email
 import com.sendgrid.helpers.mail.objects.Personalization
+import com.twilio.Twilio
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.bson.types.ObjectId
 import org.koin.java.KoinJavaComponent
 import org.litote.kmongo.coroutine.CoroutineDatabase
-import org.litote.kmongo.div
 import org.litote.kmongo.eq
 import java.io.IOException
+import com.twilio.rest.api.v2010.account.Message;
+import com.twilio.type.PhoneNumber;
+
 
 class SendGridDataSourceImpl(database: CoroutineDatabase) : SendGridDataSource {
     private val errorCode: Int = 12444
 
     val searchDataSource: SendGridKeyDataSource by KoinJavaComponent.inject(SendGridKeyDataSource::class.java)
-
-
     private val users = database.getCollection<User>()
     private val purchaseModel = database.getCollection<PurchaseModel>()
+    private val transactionModel = database.getCollection<TransactionModel>()
 
 
     override suspend fun sendEmailUsingSendGrid(
@@ -103,41 +108,45 @@ class SendGridDataSourceImpl(database: CoroutineDatabase) : SendGridDataSource {
     ): ApiResponse<String?> {
         return withContext(Dispatchers.IO) {
             try {
-                val sendGrid = SendGrid(searchDataSource.getSendGridKey())
-                // Iterate through each admin user and send an email
-                    val email = Mail().apply {
-                        from =
-                            Email(fromEmail) // Replace with your sender email
-                        subject = "Important Notification"
-                        addContent(
-                            Content(
-                                "text/plain",
-                                "$text"
-                            )
-                        ) // Plain text email body
-                        addPersonalization(
-                            Personalization().apply {
-                                addTo(Email(toEmail))
-                            }
-                        )
-                    }
-                    // Prepare the request for each email
-                    val request = Request().apply {
-                        method = Method.POST
-                        endpoint = "mail/send"
-                        body = email.build()
-                    }
-                    // Execute the request
-                    val response = sendGrid.api(request)
-                    // If sending fails for any admin, return failure response
-                    if (response.statusCode != 202) {
-                        return@withContext ApiResponse(
-                            data = null,
-                            succeeded = false,
-                            message = arrayListOf("Failed to send email to ${toEmail}, status code: ${response.statusCode}${response.body}"),
-                            errorCode = errorCode
-                        )
-                    }
+//                val sendGrid = SendGrid(searchDataSource.getSendGridKey())
+//                // Iterate through each admin user and send an email
+//                    val email = Mail().apply {
+//                        from =
+//                            Email(fromEmail) // Replace with your sender email
+//                        subject = "Important Notification"
+//                        addContent(
+//                            Content(
+//                                "text/plain",
+//                                "$text"
+//                            )
+//                        ) // Plain text email body
+//                        addPersonalization(
+//                            Personalization().apply {
+//                                addTo(Email(toEmail))
+//                            }
+//                        )
+//                    }
+//                    // Prepare the request for each email
+//                    val request = Request().apply {
+//                        method = Method.POST
+//                        endpoint = "mail/send"
+//                        body = email.build()
+//                    }
+//                    // Execute the request
+//                    val response = sendGrid.api(request)
+//                    // If sending fails for any admin, return failure response
+//                    if (response.statusCode != 202) {
+//                        return@withContext ApiResponse(
+//                            data = null,
+//                            succeeded = false,
+//                            message = arrayListOf("Failed to send email to ${toEmail}, status code: ${response.statusCode}${response.body}"),
+//                            errorCode = errorCode
+//                        )
+//                    }
+//                sendToWhatsapp(
+//                    toNumber = "+962779350932",
+//                    contentVariables = "This is the ship that made the Kessel Run in fourteen parsecs?"
+//                )
                 ApiResponse(
                     data = null,
                     succeeded = false,
@@ -182,7 +191,7 @@ class SendGridDataSourceImpl(database: CoroutineDatabase) : SendGridDataSource {
                 adminUsers.forEach { admin ->
                     val email = Mail().apply {
                         from =
-                            Email("usamaomarsoftware@gmail.com") // Replace with your sender email
+                            Email(ADMIN_EMAIL) // Replace with your sender email
                         subject = "Important Notification"
                         addContent(
                             Content(
@@ -443,7 +452,7 @@ class SendGridDataSourceImpl(database: CoroutineDatabase) : SendGridDataSource {
             // Function to send an email
             suspend fun sendEmail(to: String, subject: String, content: String): Boolean {
                 val email = Mail().apply {
-                    from = Email("usamaomarsoftware@gmail.com") // Replace with your sender email
+                    from = Email(ADMIN_EMAIL) // Replace with your sender email
                     this.subject = subject
                     addContent(Content("text/plain", content))
                     addPersonalization(Personalization().apply { addTo(Email(to)) })
@@ -505,7 +514,7 @@ class SendGridDataSourceImpl(database: CoroutineDatabase) : SendGridDataSource {
     // Function to build email body (HTML format)
     private fun buildArabicEmailBody(name: String, amount: Double, path: String): String {
         return """
-        <html>
+        <html> 
         <body style="direction: rtl; text-align: right;">
             <h1>مرحبًا، $name</h1>
             <p>هل يمكن ان تقوم بشحن رصيدي بالمبلغ $$amount قد تم بنجاح.</p>
@@ -515,6 +524,195 @@ class SendGridDataSourceImpl(database: CoroutineDatabase) : SendGridDataSource {
         </body>
         </html>
     """.trimIndent()
+    }
+
+    override suspend fun notifyAdminsAndMerchantsAboutTicketPurchase(
+          userId: String,
+          checkoutId: String,
+    ): ApiResponse<String?> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val foundPurchase = purchaseModel.findOne(PurchaseModel::checkoutId eq checkoutId)
+                val transaction = transactionModel.findOne(TransactionModel::checkoutId eq checkoutId)
+
+                val sendGrid = SendGrid(searchDataSource.getSendGridKey())
+                val buyer = users.findOne(User::id eq foundPurchase?.userId)
+                val seller1 = users.findOne(User::id eq foundPurchase?.airLineModel?.userId)
+                var seller2 = users.findOne(User::id eq foundPurchase?.returnAirLineModel?.userId)
+                if(foundPurchase?.airLineModel?.roundTripId == foundPurchase?.returnAirLineModel?.roundTripId){
+                    seller2 = null
+                }
+                val seller3 = users.findOne(User::id eq foundPurchase?.hotelTicketModel?.userId)
+                val adminUsers = users.find(User::accessRole eq AccessRole.Admin).toList()
+
+                // 1. Notify all admins
+                val adminEmailContent = """
+                Admin Notification:
+                
+                ${buyer?.emailAddress} bought a ticket from ${seller1?.emailAddress ?: ""} ${seller2?.emailAddress ?: ""} ${seller3?.emailAddress ?: ""}.
+                
+                Amount: ${transaction?.amount}
+                Checkout Id: $checkoutId
+            """.trimIndent()
+
+                adminUsers.forEach { admin ->
+                    val adminEmail = Mail().apply {
+                        from = Email(ADMIN_EMAIL) // or any admin/system email
+                        subject = "Merchant Ticket Purchase Notification"
+                        addContent(Content("text/plain", adminEmailContent))
+                        addPersonalization(Personalization().apply {
+                            addTo(Email(admin.emailAddress))
+                        })
+                    }
+
+                    val adminRequest = Request().apply {
+                        method = Method.POST
+                        endpoint = "mail/send"
+                        body = adminEmail.build()
+                    }
+
+                    val adminResponse = sendGrid.api(adminRequest)
+                    if (adminResponse.statusCode != 202) {
+                        return@withContext ApiResponse(
+                            data = null,
+                            succeeded = false,
+                            message = arrayListOf("Failed to send email to admin ${admin.emailAddress}, status code: ${adminResponse.statusCode}"),
+                            errorCode = errorCode
+                        )
+                    }
+                }
+
+                // 2. Notify the buyer
+                val buyerEmailContent = """
+                Hello ${buyer?.companyInfo?.name ?: "Merchant"},
+                
+                You have successfully purchased a ticket.
+                
+                Amount Paid: ${transaction?.amount}
+                
+                Thank you for using Hayyak.
+            """.trimIndent()
+
+                val buyerEmail = Mail().apply {
+                    from = Email(ADMIN_EMAIL)
+                    subject = "Ticket Purchase Confirmation"
+                    addContent(Content("text/plain", buyerEmailContent))
+                    addPersonalization(Personalization().apply {
+                        addTo(Email(buyer?.emailAddress))
+                    })
+                }
+
+                val buyerRequest = Request().apply {
+                    method = Method.POST
+                    endpoint = "mail/send"
+                    body = buyerEmail.build()
+                }
+
+                val buyerResponse = sendGrid.api(buyerRequest)
+                sendToWhatsapp(
+                    toNumber = buyer?.companyInfo?.phoneNumber ?: "",
+                    contentVariables = buyerEmailContent
+                )
+                if (buyerResponse.statusCode != 202) {
+                    return@withContext ApiResponse(
+                        data = null,
+                        succeeded = false,
+                        message = arrayListOf("Failed to send email to buyer ${buyer?.emailAddress}, status code: ${buyerResponse.statusCode}"),
+                        errorCode = errorCode
+                    )
+                }
+
+                // 3. Notify the seller
+                if(seller1!=null){
+                    notifySeller(seller1,checkoutId,transaction?.amount ?: 0.0,sendGrid, errorCode)
+                }
+                if(seller2!=null){
+                    notifySeller(seller2,checkoutId,transaction?.amount ?: 0.0,sendGrid, errorCode)
+                }
+                if(seller3!=null){
+                    notifySeller(seller3,checkoutId,transaction?.amount ?: 0.0,sendGrid, errorCode)
+                }
+                ApiResponse(
+                    data = "Notification emails sent successfully to admins, buyer, and seller.",
+                    succeeded = true,
+                    errorCode = null
+                )
+
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+                ApiResponse(
+                    data = null,
+                    succeeded = false,
+                    message = arrayListOf("Exception occurred: ${ex.message}"),
+                    errorCode = errorCode
+                )
+            }
+        }
+    }
+
+      private fun sendToWhatsapp(toNumber: String, contentVariables: String) {
+      Twilio.init(getTwilioAccountSid(),getTwilioAuthToken())
+      Message.creator(
+//            PhoneNumber("whatsapp:$toNumber"),
+            PhoneNumber("whatsapp:+962779350932"),
+            PhoneNumber("whatsapp:+14155238886"),
+          contentVariables
+        ).create()
+    }
+
+
+    suspend fun notifySeller(
+        seller: User, // adjust type if needed
+        checkoutId: String,
+        amount: Double,
+        sendGrid: SendGrid,
+        errorCode: Int
+    ): ApiResponse<String> = withContext(Dispatchers.IO) {
+        val sellerEmailContent = """
+        Hello ${seller.companyInfo?.name ?: "Merchant"},
+        
+        Your ticket has been sold successfully!
+        
+        Checkout Id: $checkoutId
+        Amount Received: $amount
+        
+        Thank you for using Hayyak.
+    """.trimIndent()
+
+        val sellerEmail = Mail().apply {
+            from = Email(ADMIN_EMAIL)
+            subject = "Ticket Sold Confirmation"
+            addContent(Content("text/plain", sellerEmailContent))
+            addPersonalization(Personalization().apply {
+                addTo(Email(seller.emailAddress))
+            })
+        }
+
+        val sellerRequest = Request().apply {
+            method = Method.POST
+            endpoint = "mail/send"
+            body = sellerEmail.build()
+        }
+
+        val sellerResponse = sendGrid.api(sellerRequest)
+        sendToWhatsapp(
+            toNumber = seller.companyInfo?.phoneNumber ?: "",
+            contentVariables = sellerEmailContent
+        )
+        if (sellerResponse.statusCode != 202) {
+            return@withContext ApiResponse(
+                data = null,
+                succeeded = false,
+                message = arrayListOf("Failed to send email to seller ${seller.emailAddress}, status code: ${sellerResponse.statusCode}"),
+                errorCode = errorCode
+            )
+        }
+
+        return@withContext ApiResponse(
+            data = "Notification email sent successfully to seller.",
+            succeeded = true,
+            errorCode = null
+        )
     }
 
 

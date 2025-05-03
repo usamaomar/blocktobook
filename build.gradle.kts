@@ -102,6 +102,9 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:2.3.0")
     implementation("io.ktor:ktor-client-core:2.3.0")
     implementation("com.stripe:stripe-java:24.0.0")
+//    //twilio
+    implementation("com.twilio.sdk:twilio:10.0.0")
+
 
 
 }

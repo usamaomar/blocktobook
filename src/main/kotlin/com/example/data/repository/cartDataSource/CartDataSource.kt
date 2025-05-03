@@ -34,10 +34,13 @@ interface CartDataSource {
     suspend fun getAmountWithBlockFees(
         userId: String,
     ): String
+
     suspend fun getAmountWithCurrentWalletAmountWithBlockFees(
         userId: String,
         double: Double,
     ): String
+
+    suspend fun generateUniqueTexts(): String
 
 
     suspend fun getSubscriptionAmount(
@@ -49,12 +52,12 @@ interface CartDataSource {
         userId: String,
         subscriptionId: String,
     ): String
+
     suspend fun getAmountWithCurrentWalletAmountWithSubscription(
         userId: String,
         double: Double,
         subscriptionId: String,
     ): String
-
 
 
 }

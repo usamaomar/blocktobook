@@ -1,6 +1,7 @@
 package com.example.data.repository.sendGrid
 
 import com.example.domain.model.publicModel.ApiResponse
+import com.example.domain.model.purchaseModel.PurchaseModel
 
 interface SendGridDataSource {
 
@@ -38,5 +39,10 @@ interface SendGridDataSource {
     suspend fun sendEmailToAdminAndMerchantAfterUpdatingCustomer(
         merchantId: String,
         ticketId: String,
+    ): ApiResponse<String?>
+
+    suspend fun notifyAdminsAndMerchantsAboutTicketPurchase(
+        userId: String,
+        checkoutId: String,
     ): ApiResponse<String?>
 }

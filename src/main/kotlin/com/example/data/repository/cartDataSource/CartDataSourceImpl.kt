@@ -379,6 +379,24 @@ class CartDataSourceImpl(database: CoroutineDatabase) : CartDataSource {
         return formatAmount(finalPrice + blockFees)
     }
 
+    override suspend fun generateUniqueTexts(): String {
+        return  generateCombinedUniqueText()
+    }
+
+    private fun generateCombinedUniqueText(lengthPerPart: Int = 2): String {
+        val charset = ('A'..'Z') + ('a'..'z') + ('0'..'9')
+        val generated = mutableSetOf<String>()
+
+        while (generated.size < 1) {
+            val part = (1..lengthPerPart)
+                .map { charset.random() }
+                .joinToString("")
+            generated.add(part)
+        }
+
+        return generated.joinToString("-") // You can change "-" to "" if no separator is needed
+    }
+
     override suspend fun getAmountWithCurrentWalletAmountWithSubscription(
         userId: String,
         double: Double,

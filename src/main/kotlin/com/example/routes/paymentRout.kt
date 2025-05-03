@@ -2,31 +2,23 @@ package com.example.routes
 
 import com.example.data.repository.SubscriptionTypesDataSource.SubscriptionTypesDataSource
 import com.example.data.repository.cartDataSource.CartDataSource
-import com.example.data.repository.cartDataSource.formatAmount
 import com.example.data.repository.paymentDataSource.PaymentDataSource
 import com.example.data.repository.purchaseDataSource.PurchaseDataSource
+import com.example.data.repository.sendGrid.SendGridDataSource
 import com.example.data.repository.userDataSource.UserDataSource
 import com.example.data.repository.walletDataSource.TransactionDataSource
 import com.example.domain.model.payment.CreatePaymentIncludeAmount
 import com.example.domain.model.payment.CreatePaymentModel
-import com.example.domain.model.payment.PaymentResponse
 import com.example.domain.model.publicModel.ApiResponse
 import com.example.endPoints.Api
 import com.example.plugins.decodeJwtPayload
-import com.example.util.Constants.secretKey
+import com.example.util.Constants.getAuth
+import com.example.util.Constants.getEntityId
+import com.example.util.Constants.getPaymentUrl
 import com.example.util.receiveModel
 import com.example.util.toSafeDouble
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.httpPost
-import com.stripe.Stripe
-import com.stripe.model.PaymentIntent
-import com.stripe.model.Price
-import com.stripe.model.Product
-import com.stripe.model.checkout.Session
-import com.stripe.param.PaymentIntentCreateParams
-import com.stripe.param.PriceCreateParams
-import com.stripe.param.ProductCreateParams
-import com.stripe.param.checkout.SessionCreateParams
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.http.HttpStatusCode
@@ -37,7 +29,6 @@ import io.ktor.server.routing.post
 import io.ktor.util.InternalAPI
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
@@ -62,13 +53,17 @@ fun Route.paymentRout() {
     val cartDataSource: CartDataSource by KoinJavaComponent.inject(CartDataSource::class.java)
     val userDataSource: UserDataSource by KoinJavaComponent.inject(UserDataSource::class.java)
     val purchaseDataSource: PurchaseDataSource by KoinJavaComponent.inject(PurchaseDataSource::class.java)
+    val sendGridDataSource: SendGridDataSource by KoinJavaComponent.inject(SendGridDataSource::class.java)
     post(Api.Payment.CreateCartCheckout.path) {
         try {
             val authorization = call.request.headers["Authorization"]
             val request = call.receiveModel<CreatePaymentIncludeAmount>()
             val decodedPayload = decodeJwtPayload(authorization ?: "")
             val userId = decodedPayload["userId"] ?: ""
+            val paymentUrl = "${getPaymentUrl()}/v1/checkouts"
+            val authorizationBearer = getAuth()
             val result = withContext(Dispatchers.IO) {
+                val userInfo = userDataSource.getUserInfo(userId)
                 val amounts: String = if (request.includeAmount) {
                     cartDataSource.getAmountWithCurrentWalletAmountWithBlockFees(
                         userId,
@@ -78,138 +73,24 @@ fun Route.paymentRout() {
                 } else {
                     cartDataSource.getAmountWithBlockFees(userId)
                 }
+                val texts = cartDataSource.generateUniqueTexts()
 
-                Stripe.apiKey = secretKey
-
-                val params = PaymentIntentCreateParams.builder()
-                    .setAmount((amounts.toDouble() * 100).toLong())
-                    .setCurrency("usd")
-                    .build()
-
-                return@withContext PaymentIntent.create(params)
-            }
-            call.respond(
-                message = ApiResponse(
-                    succeeded = true,
-                    message = arrayListOf("paymentRedirectUrl"),
-                    data = PaymentResponse(clientSecret = result.clientSecret, id = result.id) , errorCode = errorCode
-                )
-            )
-        } catch (e: Exception) {
-            call.respond(
-                message = ApiResponse(
-                    succeeded = false,
-                    message = arrayListOf(e.message.toString(), e.cause?.message.toString()),
-                    data = null, errorCode = errorCode
-                ), status = HttpStatusCode.ExpectationFailed
-            )
-        }
-    }
-
-    post(Api.Payment.CreateCartCheckoutWeb.path) {
-        try {
-            val authorization = call.request.headers["Authorization"]
-            val request = call.receiveModel<CreatePaymentIncludeAmount>()
-            val decodedPayload = decodeJwtPayload(authorization ?: "")
-            val userId = decodedPayload["userId"] ?: ""
-            val result = withContext(Dispatchers.IO) {
-                val amounts: String = if (request.includeAmount) {
-                    cartDataSource.getAmountWithCurrentWalletAmountWithBlockFees(
-                        userId,
-                        transactionDataSource.getWalletAmountByUserId(userId)?.data.toSafeDouble()
-                            ?: 0.0
-                    )
-                } else {
-                    cartDataSource.getAmountWithBlockFees(userId)
-                }
-
-                Stripe.apiKey = secretKey
-
-                val YOUR_DOMAIN = "http://localhost:49865"
-
-                val productName = userId
-                val productDescription = "Product"
-
-                val productParams = ProductCreateParams.builder()
-                    .setName(productName)
-                    .setDescription(productDescription)
-                    .build()
-
-                val product = Product.create(productParams)
-
-
-
-                val priceParams = PriceCreateParams.builder()
-                    .setProduct(product.id)
-                    .setCurrency("usd")
-                    .setUnitAmount((amounts.toDouble() * 100).toLong()) // Stripe uses cents
-                    .build()
-                val price = Price.create(priceParams)
-
-                // Stripe session parameters
-                val params = SessionCreateParams.builder()
-                    .setMode(SessionCreateParams.Mode.PAYMENT)
-                    .setSuccessUrl("$YOUR_DOMAIN/successPage")
-                    .setCancelUrl("$YOUR_DOMAIN/cancelPage")
-                    .addLineItem(
-                        SessionCreateParams.LineItem.builder()
-                            .setPrice(price.id)
-                            .setQuantity(1)
-                            .build()
-                    )
-                    .build()
-
-                // Create Stripe Checkout Session
-                val session = Session.create(params)
-
-                // Respond with session URL
-                return@withContext session
-            }
-            call.respond(
-                message = ApiResponse(
-                    succeeded = true,
-                    message = arrayListOf("paymentRedirectUrl"),
-                    data = PaymentResponse(clientSecret = result.url, id = result.id) , errorCode = errorCode
-                )
-            )
-        } catch (e: Exception) {
-            call.respond(
-                message = ApiResponse(
-                    succeeded = false,
-                    message = arrayListOf(e.message.toString(), e.cause?.message.toString()),
-                    data = null, errorCode = errorCode
-                ), status = HttpStatusCode.ExpectationFailed
-            )
-        }
-    }
-
-
-    post(Api.Payment.CreateSubscriptionCheckout.path) {
-        try {
-            val authorization = call.request.headers["Authorization"]
-            val request = call.receiveModel<CreatePaymentIncludeAmount>()
-            val decodedPayload = decodeJwtPayload(authorization ?: "")
-            val userId = decodedPayload["userId"] ?: ""
-            val paymentUrl = "https://eu-test.oppwa.com/v1/checkouts"
-            val authorizationBearer =
-                "Bearer OGE4Mjk0MTc0ZDA1OTViYjAxNGQwNWQ4MjllNzAxZDF8OVRuSlBjMm45aA=="
-            val amounts: String
-            val result = withContext(Dispatchers.IO) {
-                amounts = if (request.includeAmount) {
-                  cartDataSource.getAmountWithCurrentWalletAmountWithSubscription(
-                        userId,
-                        transactionDataSource.getWalletAmountByUserId(userId)?.data.toSafeDouble()
-                            ?: 0.0, request.subscriptionTypeId ?: ""
-                    )
-                } else {
-                     cartDataSource.getAmountWithSubscriptionFees(userId,request.subscriptionTypeId ?: "")
-                }
                 val parameters = mutableListOf(
-                    "entityId" to "8a8294174d0595bb014d05d829cb01cd",
-                    "currency" to "USD",
+                    "entityId" to getEntityId(),
+                    "currency" to "JOD",
                     "paymentType" to "DB",
                     "integrity" to "true",
                     "amount" to amounts,
+                    "customParameters[3DS2_enrolled]" to "true", // only for test server
+                    "merchantTransactionId" to "${texts}-${userId}", // must be your unique ID
+                    "customer.email" to userInfo?.emailAddress,
+                    "billing.street1" to "Amman",
+                    "billing.city" to "Amman",
+                    "billing.state" to "Amman",
+                    "billing.country" to "JO", // Use ISO Alpha-2 code, e.g., "JO"
+                    "billing.postcode" to "11118",
+                    "customer.givenName" to userInfo?.companyInfo?.name,
+                    "customer.surname" to userInfo?.companyInfo?.name
                 )
                 paymentUrl.httpPost(parameters)
                     .header("Authorization" to authorizationBearer)
@@ -234,22 +115,83 @@ fun Route.paymentRout() {
         }
     }
 
+
+
+
+//    post(Api.Payment.CreateSubscriptionCheckout.path) {
+//        try {
+//            val authorization = call.request.headers["Authorization"]
+//            val request = call.receiveModel<CreatePaymentIncludeAmount>()
+//            val decodedPayload = decodeJwtPayload(authorization ?: "")
+//            val userId = decodedPayload["userId"] ?: ""
+//            val paymentUrl = "${getPaymentUrl()}/v1/checkouts"
+//            val authorizationBearer =
+//                getAuth()
+//            val amounts: String
+//            val result = withContext(Dispatchers.IO) {
+//                amounts = if (request.includeAmount) {
+//                    cartDataSource.getAmountWithCurrentWalletAmountWithSubscription(
+//                        userId,
+//                        transactionDataSource.getWalletAmountByUserId(userId)?.data.toSafeDouble()
+//                            ?: 0.0, request.subscriptionTypeId ?: ""
+//                    )
+//                } else {
+//                    cartDataSource.getAmountWithSubscriptionFees(
+//                        userId,
+//                        request.subscriptionTypeId ?: ""
+//                    )
+//                }
+//                val parameters = mutableListOf(
+//                    "entityId" to getEntityId(),
+//                    "currency" to "USD",
+//                    "paymentType" to "DB",
+//                    "integrity" to "true",
+//                    "amount" to amounts,
+//                )
+//                paymentUrl.httpPost(parameters)
+//                    .header("Authorization" to authorizationBearer)
+//                    .header("Content-Type" to "application/x-www-form-urlencoded")
+//                    .responseString()
+//            }
+//            call.respond(
+//                message = ApiResponse(
+//                    succeeded = true,
+//                    message = arrayListOf("paymentRedirectUrl"),
+//                    data = result.third.get(), errorCode = errorCode
+//                )
+//            )
+//        } catch (e: Exception) {
+//            call.respond(
+//                message = ApiResponse(
+//                    succeeded = false,
+//                    message = arrayListOf(e.message.toString(), e.cause?.message.toString()),
+//                    data = null, errorCode = errorCode
+//                ), status = HttpStatusCode.ExpectationFailed
+//            )
+//        }
+//    }
+
     post(Api.Payment.GetPaymentStatus.path) {
         try {
             val request = call.receiveModel<CreatePaymentModel>()
             val authorization = call.request.headers["Authorization"]
             val decodedPayload = decodeJwtPayload(authorization ?: "")
             val userId = decodedPayload["userId"] ?: ""
-            val paymentUrl = "https://api.stripe.com/v1/payment_intents/${request.id}"
-            val authorizationBearer = "Bearer $secretKey"
+            val paymentUrl =
+                "${getPaymentUrl()}/v1/checkouts/${request.resourcePath}/payment"//checkouts/{checkoutId}/payment
+            val authorizationBearer =
+                getAuth()
             val result = withContext(Dispatchers.IO) {
-                paymentUrl.httpGet()
+                val parameters = mutableListOf(
+                    "entityId" to getEntityId()
+                )
+                paymentUrl.httpGet(parameters)
                     .header("Authorization" to authorizationBearer)
                     .header("Content-Type" to "application/x-www-form-urlencoded")
                     .responseString()
             }
             val statsCode = extractCode(result.third.get())
-            if (statsCode == "succeeded") {
+            if (statsCode == "000.100.110" || statsCode == "000.000.000") {
                 val amounts: String = if (request.includeAmount == true) {
                     cartDataSource.getAmountWithCurrentWalletAmountWithBlockFees(
                         userId,
@@ -269,6 +211,7 @@ fun Route.paymentRout() {
                 if (respond?.data == true) {
                     val finalResponse = purchaseDataSource.checkOut(userId)
                     if (finalResponse.data != "Error") {
+                        sendGridDataSource.notifyAdminsAndMerchantsAboutTicketPurchase(userId,finalResponse.data ?:"")
                         call.respond(
                             message = ApiResponse(
                                 succeeded = true,
@@ -321,7 +264,7 @@ fun Route.paymentRout() {
             val authorization = call.request.headers["Authorization"]
             val decodedPayload = decodeJwtPayload(authorization ?: "")
             val userId = decodedPayload["userId"] ?: ""
-            val paymentUrl = "https://eu-test.oppwa.com${request.resourcePath}"
+            val paymentUrl = "${getPaymentUrl()}${request.resourcePath}"
             val authorizationBearer =
                 "Bearer OGE4Mjk0MTc0ZDA1OTViYjAxNGQwNWQ4MjllNzAxZDF8OVRuSlBjMm45aA=="
 //            val result = withContext(Dispatchers.IO) {
@@ -335,38 +278,38 @@ fun Route.paymentRout() {
 //            }
 //            val statsCode = extractCode(result.third.get()) //todo update this
 //            if (statsCode == "800.100.156") {
-               val amounts = if (request.includeAmount == true) {
-                    cartDataSource.getAmountWithCurrentWalletAmountWithSubscription(
-                        userId,
-                        transactionDataSource.getWalletAmountByUserId(userId)?.data.toSafeDouble()
-                            ?: 0.0, request.id ?: ""
-                    )
-                } else {
-                    cartDataSource.getAmountWithSubscriptionFees(userId,request.id ?: "")
-                }
-                paymentDataSource.createCheckout(
+            val amounts = if (request.includeAmount == true) {
+                cartDataSource.getAmountWithCurrentWalletAmountWithSubscription(
                     userId,
-                    amounts.toSafeDouble() ?: 0.0,
-                      0.0
+                    transactionDataSource.getWalletAmountByUserId(userId)?.data.toSafeDouble()
+                        ?: 0.0, request.id ?: ""
                 )
-                val finalResponse = purchaseDataSource.checkOutSubscription(userId,request.id)
-                if (finalResponse.data != "Error") {
-                    call.respond(
-                        message = ApiResponse(
-                            succeeded = true,
-                            message = arrayListOf("paymentRedirectUrl"),
-                            data = "result.third.get()", errorCode = errorCode
-                        )
+            } else {
+                cartDataSource.getAmountWithSubscriptionFees(userId, request.id ?: "")
+            }
+            paymentDataSource.createCheckout(
+                userId,
+                amounts.toSafeDouble() ?: 0.0,
+                0.0
+            )
+            val finalResponse = purchaseDataSource.checkOutSubscription(userId, request.id)
+            if (finalResponse.data != "Error") {
+                call.respond(
+                    message = ApiResponse(
+                        succeeded = true,
+                        message = arrayListOf("paymentRedirectUrl"),
+                        data = "result.third.get()", errorCode = errorCode
                     )
-                } else {
-                    call.respond(
-                        message = ApiResponse(
-                            succeeded = false,
-                            message = arrayListOf("paymentRedirectUrl"),
-                            data = "result.third.get()", errorCode = errorCode
-                        )
+                )
+            } else {
+                call.respond(
+                    message = ApiResponse(
+                        succeeded = false,
+                        message = arrayListOf("paymentRedirectUrl"),
+                        data = "result.third.get()", errorCode = errorCode
                     )
-                }
+                )
+            }
 //            } else {
 //                call.respond(
 //                    message = ApiResponse(
@@ -392,11 +335,10 @@ fun Route.paymentRout() {
 fun extractCode(jsonString: String): String? {
     // Parse the JSON string into the PaymentResponse object
     val jsonElement = Json.parseToJsonElement(jsonString)
-
-    // Extract the "code" field from the "result" object
-    val code = jsonElement.jsonObject["status"]
+    val code = jsonElement
+        .jsonObject["result"]
+        ?.jsonObject?.get("code")
         ?.jsonPrimitive?.content
-
     return code
 }
 
