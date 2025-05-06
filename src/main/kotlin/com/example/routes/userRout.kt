@@ -44,6 +44,25 @@ fun Route.userRoute() {
             )
         }
     }
+    get(Api.User.IsTest.path) {
+        try {
+            call.respond(
+                message = ApiResponse(
+                    succeeded = true,
+                    data = null,
+                    errorCode = errorCode
+                )
+            )
+        } catch (e: Exception) {
+            call.respond(
+                message = ApiResponse(
+                    succeeded = false,
+                    message = arrayListOf(e.message.toString(), e.cause?.message.toString()),
+                    data = null, errorCode = errorCode
+                ), status = HttpStatusCode.ExpectationFailed
+            )
+        }
+    }
     get(Api.User.GetById.path) {
         try {
             val authorization = call.request.headers["Authorization"]

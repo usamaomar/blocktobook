@@ -215,7 +215,7 @@ fun Route.paymentRout() {
                         call.respond(
                             message = ApiResponse(
                                 succeeded = true,
-                                message = arrayListOf("paymentRedirectUrl"),
+                                message = arrayListOf("Error:${ result.third.get()}"),
                                 data = result.third.get(), errorCode = errorCode
                             )
                         )
@@ -223,7 +223,7 @@ fun Route.paymentRout() {
                         call.respond(
                             message = ApiResponse(
                                 succeeded = false,
-                                message = arrayListOf("paymentRedirectUrl"),
+                                message = arrayListOf("Error:${ result.third.get()}"),
                                 data = result.third.get(), errorCode = errorCode
                             )
                         )
@@ -232,7 +232,7 @@ fun Route.paymentRout() {
                     call.respond(
                         message = ApiResponse(
                             succeeded = false,
-                            message = arrayListOf("paymentRedirectUrl"),
+                            message = arrayListOf("Error:${ result.third.get()}"),
                             data = result.third.get(), errorCode = errorCode
                         )
                     )
@@ -241,7 +241,7 @@ fun Route.paymentRout() {
                 call.respond(
                     message = ApiResponse(
                         succeeded = false,
-                        message = arrayListOf("paymentRedirectUrl"),
+                        message = arrayListOf("Error:${ result.third.get()}"),
                         data = result.third.get(), errorCode = errorCode
                     )
                 )

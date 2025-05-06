@@ -162,6 +162,7 @@ val excludedPaths = listOf(
     Api.Auth.CreateEmailAdmin.path,
     Api.Auth.ForgotPassword.path,
     Api.Auth.Refresh.path,
+    Api.User.IsTest.path,
     Api.SubscriptionTypes.GetAll.path,
     Api.Cities.sendTestSendGrid.path
 )

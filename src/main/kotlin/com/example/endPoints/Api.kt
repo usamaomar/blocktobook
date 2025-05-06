@@ -218,6 +218,10 @@ object Api {
             override val path: String
                 get() = "${User.path}/GetAll"
         }
+        object IsTest : ApiPath {
+            override val path: String
+                get() = "${User.path}/IsTest"
+        }
 
     }
 

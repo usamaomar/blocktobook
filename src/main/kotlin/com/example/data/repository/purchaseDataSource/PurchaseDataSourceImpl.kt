@@ -422,14 +422,12 @@ class PurchaseDataSourceImpl(database: CoroutineDatabase) : PurchaseDataSource {
 
         // Apply filters similar to the previous method
         if (searchText.isNotEmpty()) {
-            queryForSearchFilter.add(
-                Filters.regex("airLineModel.departureCity.profiles.name", searchText)
-            )
-            val foundPurchase = purchaseModel.findOne(and(queryForSearchFilter))
             queryForItemFilter.add(
-                Filters.eq(
-                    "airLineModel.departureCity.id",
-                    foundPurchase?.airLineModel?.departureCity?.id
+                Filters.or(
+                    Filters.regex("airLineModel.ticketNumber", searchText),
+                    Filters.regex("returnAirLineModel.ticketNumber", searchText),
+                    Filters.regex("airLineModel.id", searchText),
+                    Filters.regex("returnAirLineModel.id", searchText)
                 )
             )
         }
@@ -448,7 +446,7 @@ class PurchaseDataSourceImpl(database: CoroutineDatabase) : PurchaseDataSource {
         queryForItemFilter.add(Filters.and(Filters.ne("airLineModel", null)))
 
         if (!filterByHotelIds.isNullOrEmpty()) {
-            queryForItemFilter.add(Filters.`in`("airLineModel.departureCity.id", filterByHotelIds))
+            queryForItemFilter.add(Filters.`in`("airLineModel.departureAirport.id", filterByHotelIds))
         }
 
         if (filterByDateFrom != null || filterByDateTo != null) {

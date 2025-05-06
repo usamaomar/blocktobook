@@ -39,6 +39,7 @@ object Constants {
 
     fun getPaymentUrl(): String {
         return  PAYMENT_LIVE
+//        return  PAYMENT_TEST
     }
 
 }
