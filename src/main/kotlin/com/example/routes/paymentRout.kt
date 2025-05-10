@@ -77,7 +77,7 @@ fun Route.paymentRout() {
 
                 val parameters = mutableListOf(
                     "entityId" to getEntityId(),
-                    "currency" to "JOD",
+                    "currency" to "USD",
                     "paymentType" to "DB",
                     "integrity" to "true",
                     "amount" to amounts,
