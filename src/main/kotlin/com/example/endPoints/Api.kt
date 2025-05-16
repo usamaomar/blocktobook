@@ -363,6 +363,18 @@ object Api {
 
 
     }
+
+    object Web : ApiPath {
+        override val path: String
+            get() = "$BASE/Web"
+
+        object Pyment : ApiPath {
+            override val path: String
+                get() = "${Web.path}/Pyment"
+        }
+    }
+
+
     object Payment : ApiPath {
         override val path: String
             get() = "$BASE/Payment"

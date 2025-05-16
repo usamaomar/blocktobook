@@ -164,7 +164,8 @@ val excludedPaths = listOf(
     Api.Auth.Refresh.path,
     Api.User.IsTest.path,
     Api.SubscriptionTypes.GetAll.path,
-    Api.Cities.sendTestSendGrid.path
+    Api.Cities.sendTestSendGrid.path,
+    Api.Web.Pyment.path,
 )
 val allowedMerchantPaths = listOf(
     Api.Profile.UpdateCompany.path,

@@ -8,7 +8,8 @@ import com.example.routes.cartRout
 import com.example.routes.cityRout
 import com.example.routes.hotelRout
 import com.example.routes.hotelTicketRout
-import com.example.routes.paymentRout
+ import com.example.routes.htmlRout
+ import com.example.routes.paymentRout
 import com.example.routes.profileRout
 import com.example.routes.purchaseRout
 import com.example.routes.searchRout
@@ -37,5 +38,6 @@ fun Application.configureRouting() {
         paymentRout()
         purchaseRout()
         searchRout()
+        htmlRout()
     }
 }

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Checkout</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        #payment-result {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Payment Checkout</h1>
+    <div id="payment-form">
+        <!-- Payment form will be rendered here -->
+    </div>
+    <div id="payment-result"></div>
+</div>
+
+<script>
+    // Get URL parameters
+    function getUrlParameter(name) {
+        name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+        var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+        var results = regex.exec(location.search);
+        return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+    }
+
+    // Get parameters from URL
+    const checkoutId = getUrlParameter('checkoutId');
+    const integrity = getUrlParameter('integrity');
+    const isLive = getUrlParameter('isLive') === 'true';
+
+    // Send message back to Flutter
+    function sendToFlutter(message) {
+        // Send message to parent window (Flutter)
+        if (typeof message === 'object') {
+            message = JSON.stringify(message);
+        }
+        window.opener.postMessage(message, '*');
+    }
+
+    // Show result and close page
+    function showResultAndClose(status, data) {
+        // Display result to user
+        const resultElement = document.getElementById('payment-result');
+        resultElement.style.display = 'block';
+        resultElement.className = status === 'success' ? 'success' : 'error';
+        resultElement.textContent = status === 'success'
+            ? 'Payment successful! Redirecting...'
+            : 'Payment failed. Redirecting...';
+
+        // Create final response object
+        const responseData = {
+            status: status,
+            data: data
+        };
+
+        // Send result to Flutter
+        sendToFlutter(responseData);
+
+        console.log('Sending payment result to Flutter:', responseData);
+
+        // Close the page after a short delay
+        setTimeout(function() {
+            try {
+                // Try to close the window
+                window.close();
+            } catch (e) {
+                console.error('Failed to close window automatically:', e);
+                // Show message asking user to close the window manually
+                resultElement.textContent += ' Please close this window to return to the application.';
+            }
+        }, 1500);
+    }
+
+    // Create payment form
+    function createPaymentForm() {
+        // Create form element
+        const form = document.createElement('form');
+        form.className = "paymentWidgets";
+        form.setAttribute("data-brands", "VISA MASTER AMEX");
+
+        // Set the form action - this will be handled by the payment gateway
+        // The result will be posted back to this page
+        form.action = window.location.href;
+
+        // Add form to page
+        document.getElementById('payment-form').appendChild(form);
+    }
+
+    // Create and load payment script
+    function loadPaymentScript() {
+        // Create script element
+        const script = document.createElement('script');
+
+        // Set script attributes
+        script.src = isLive
+            ? `https://eu-prod.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`
+            : `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
+        script.integrity = integrity;
+        script.crossOrigin = "anonymous";
+
+        // Handle script load event
+        script.onload = function() {
+            sendToFlutter('SCRIPT_LOADED');
+            createPaymentForm();
+        };
+
+        // Handle script error
+        script.onerror = function() {
+            sendToFlutter('SCRIPT_ERROR');
+            showResultAndClose('error', { message: 'Failed to load payment script' });
+        };
+
+        // Add script to document
+        document.head.appendChild(script);
+    }
+
+    // Initialize when page loads
+    window.onload = function() {
+        if (!checkoutId || !integrity) {
+            sendToFlutter('MISSING_PARAMETERS');
+            showResultAndClose('error', { message: 'Missing required parameters' });
+            return;
+        }
+
+        sendToFlutter('PAGE_LOADED');
+        loadPaymentScript();
+
+        // Check for resource_path in URL which indicates a redirect after payment
+        const resourcePath = getUrlParameter('resourcePath');
+        if (resourcePath) {
+            // Payment completed and redirected back
+            const resultId = getUrlParameter('id');
+            const resultCode = getUrlParameter('resultCode');
+
+            // Determine if payment was successful
+            const isSuccess = resultCode === '000.000.000' || resultCode === '000.100.110';
+
+            showResultAndClose(
+                isSuccess ? 'success' : 'error',
+                {
+                    resourcePath: resourcePath,
+                    resultCode: resultCode,
+                    id: resultId
+                }
+            );
+        }
+    };
+
+    // Listen for messages from payment widget
+    window.addEventListener('message', function(event) {
+        // Check if the message is from the payment processor
+        if (event.data && typeof event.data === 'object') {
+            // Check for payment result indicators
+            if (event.data.resultCode || event.data.status) {
+                const isSuccess =
+                    (event.data.resultCode && (event.data.resultCode === '000.000.000' || event.data.resultCode === '000.100.110')) ||
+                    (event.data.status && event.data.status === 'success');
+
+                showResultAndClose(isSuccess ? 'success' : 'error', event.data);
+            }
+        }
+
+        // Forward all messages to the Flutter app
+        sendToFlutter(event.data);
+    });
+</script>
+</body>
+</html>

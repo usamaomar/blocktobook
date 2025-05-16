@@ -175,7 +175,7 @@ fun Route.paymentRout() {
         try {
             val request = call.receiveModel<CreatePaymentModel>()
             val authorization = call.request.headers["Authorization"]
-            val decodedPayload = decodeJwtPayload(authorization ?: "")
+            val decodedPayload = decodeJwtPayload(authorization ?: "")///v1/checkouts/6556A3D2CB7B907FC4ED3ECA2F069515.uat01-vm-tx03/payment
             val userId = decodedPayload["userId"] ?: ""
             val paymentUrl =
                 "${getPaymentUrl()}/v1/checkouts/${request.resourcePath}/payment"//checkouts/{checkoutId}/payment
@@ -223,7 +223,7 @@ fun Route.paymentRout() {
                         call.respond(
                             message = ApiResponse(
                                 succeeded = false,
-                                message = arrayListOf("Error:${ result.third.get()}"),
+                                message = arrayListOf("Error:${ result.third.get()}",statsCode.toString()),
                                 data = result.third.get(), errorCode = errorCode
                             )
                         )
@@ -232,7 +232,7 @@ fun Route.paymentRout() {
                     call.respond(
                         message = ApiResponse(
                             succeeded = false,
-                            message = arrayListOf("Error:${ result.third.get()}"),
+                            message = arrayListOf("Error:${ result.third.get()}",statsCode.toString()),
                             data = result.third.get(), errorCode = errorCode
                         )
                     )
@@ -241,7 +241,7 @@ fun Route.paymentRout() {
                 call.respond(
                     message = ApiResponse(
                         succeeded = false,
-                        message = arrayListOf("Error:${ result.third.get()}"),
+                        message = arrayListOf("Error:${ result.third.get()}",statsCode.toString()),
                         data = result.third.get(), errorCode = errorCode
                     )
                 )
