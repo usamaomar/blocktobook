@@ -36,6 +36,8 @@ import com.example.data.repository.userDataSource.UploadDataSource
 import com.example.data.repository.uploadDataSource.UploadDataSourceImpl
 import com.example.data.repository.userDataSource.UserDataSourceImpl
 import com.example.data.repository.userDataSource.UserDataSource
+import com.example.data.repository.visaDataSource.VisaDataSource
+import com.example.data.repository.visaDataSource.VisaDataSourceImpl
 import com.example.data.repository.walletDataSource.TransactionDataSource
 import com.example.data.repository.walletDataSource.TransactionDataSourceImpl
 import com.example.util.Constants.DATABASE_NAME
@@ -139,6 +141,9 @@ val koinModule = module {
     }
     single<SendGridKeyDataSource> {
         SendGridKeySourceImpl()
+    }
+    single<VisaDataSource> {
+        VisaDataSourceImpl()
     }
 //    single {
 //        val serviceAccount = object {}::class.java.classLoader.getResourceAsStream("ktor-sendgrid.json") ?: throw IllegalStateException("ktor-sendgrid.json not found!")

@@ -16,7 +16,8 @@ import com.example.routes.searchRout
 import com.example.routes.subscriptionTypeRout
 import com.example.routes.uploadRoute
 import com.example.routes.userRoute
-import com.example.routes.walletRoute
+ import com.example.routes.visaRoute
+ import com.example.routes.walletRoute
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 
@@ -27,6 +28,7 @@ fun Application.configureRouting() {
         profileRout()
         userRoute()
         walletRoute()
+        visaRoute()
         airLineRout()
         cityRout()
         subscriptionTypeRout()

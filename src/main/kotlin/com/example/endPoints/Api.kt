@@ -237,6 +237,17 @@ object Api {
 
     }
 
+    object Visa : ApiPath {
+        override val path: String
+            get() = "$BASE/Visa"
+
+        object POST : ApiPath {
+            override val path: String
+                get() = "${Visa.path}/POST"
+        }
+
+    }
+
     object AirLineTicket : ApiPath {
         override val path: String
             get() = "$BASE/AirLineTicket"
